@@ -156,7 +156,7 @@ st.markdown("""
 def load_data() -> pd.DataFrame:
     conn = st.connection("gsheets", type=GSheetsConnection)
     df = conn.read(
-        worksheet="Tabelle1",  # ← ggf. Tabellenblatt-Namen anpassen
+        worksheet="Rezepte",  # ← ggf. Tabellenblatt-Namen anpassen
         usecols=list(range(9)),
         ttl=300,
     )
