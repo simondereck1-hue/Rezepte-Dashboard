@@ -58,16 +58,30 @@ st.markdown("""
         text-transform: uppercase !important;
     }
 
-    /* Recipe card & Expander Fix */
+    /* Recipe card & Expander Fix - VERBESSERTE LESBARKEIT */
     .stExpander {
         background-color: white !important;
         border-radius: 12px !important;
         border: 1px solid #e0d5c8 !important;
         margin-bottom: 1rem !important;
+        overflow: hidden;
+    }
+    
+    /* Header-Text im Expander (Rezeptname & Zeit) */
+    .stExpander summary p {
+        color: #2c1a0e !important;
+        font-weight: 700 !important;
+        font-size: 1.1rem !important;
+    }
+
+    /* Hover-Effekt für den Header */
+    .stExpander summary:hover {
+        background-color: #fcf8f2 !important;
     }
     
     .stExpander [data-testid="stExpanderDetails"] {
         color: #2c1a0e !important;
+        padding: 1.5rem !important;
     }
 
     /* Badge Styles */
@@ -99,7 +113,7 @@ st.markdown("""
         border-bottom: 1px solid #eee;
     }
 
-    /* Sidebar - Dunkler Kontrast verbessert */
+    /* Sidebar - Dunkler Kontrast */
     section[data-testid="stSidebar"] {
         background-color: #2c1a0e !important;
     }
@@ -142,6 +156,7 @@ def load_data() -> pd.DataFrame:
     sheet = client.open_by_url(st.secrets["spreadsheet_url"])
     worksheet = sheet.get_worksheet(0)
     data = worksheet.get_all_records()
+    
     df = pd.DataFrame(data)
 
     df.columns = df.columns.str.strip()
