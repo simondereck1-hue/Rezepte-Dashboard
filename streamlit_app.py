@@ -11,13 +11,14 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS ────────────────────────────────────────────────────────────────
+# ── Custom CSS (Optimiert für Lesbarkeit) ─────────────────────────────────────
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@300;400;700&display=swap');
 
     html, body, [class*="css"] {
         font-family: 'Lato', sans-serif;
+        color: #2c1a0e;
     }
 
     /* Background */
@@ -45,57 +46,31 @@ st.markdown("""
         font-weight: 300;
     }
 
-    /* Metric cards */
-    .metric-row {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 2rem;
+    /* Metric cards (Fix für Lesbarkeit) */
+    [data-testid="stMetricValue"] {
+        color: #2c1a0e !important;
+        font-family: 'Playfair Display', serif !important;
+        font-weight: 700 !important;
     }
-    .metric-card {
-        background: white;
-        border-radius: 14px;
-        padding: 1.2rem 1.6rem;
-        box-shadow: 0 2px 12px rgba(44,26,14,0.07);
-        flex: 1;
-        border-left: 4px solid #d4845a;
-    }
-    .metric-card .metric-value {
-        font-family: 'Playfair Display', serif;
-        font-size: 2.2rem;
-        font-weight: 700;
-        color: #2c1a0e;
-        line-height: 1;
-    }
-    .metric-card .metric-label {
-        font-size: 0.8rem;
-        color: #8c6a4e;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-top: 0.3rem;
-        font-weight: 700;
+    [data-testid="stMetricLabel"] {
+        color: #8c6a4e !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
     }
 
-    /* Recipe card */
-    .recipe-card {
-        background: white;
-        border-radius: 16px;
-        padding: 1.5rem 1.8rem;
-        box-shadow: 0 2px 16px rgba(44,26,14,0.08);
-        margin-bottom: 1.2rem;
-        border-top: 4px solid #d4845a;
-        transition: box-shadow 0.2s;
+    /* Recipe card & Expander Fix */
+    .stExpander {
+        background-color: white !important;
+        border-radius: 12px !important;
+        border: 1px solid #e0d5c8 !important;
+        margin-bottom: 1rem !important;
     }
-    .recipe-card:hover {
-        box-shadow: 0 6px 24px rgba(44,26,14,0.14);
-    }
-    .recipe-card h3 {
-        font-family: 'Playfair Display', serif;
-        color: #2c1a0e;
-        font-size: 1.35rem;
-        margin: 0 0 0.8rem 0;
+    
+    .stExpander [data-testid="stExpanderDetails"] {
+        color: #2c1a0e !important;
     }
 
-    /* Badge */
+    /* Badge Styles */
     .badge {
         display: inline-block;
         padding: 0.25rem 0.7rem;
@@ -115,45 +90,45 @@ st.markdown("""
 
     /* Section label in expander */
     .section-label {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 1px;
-        color: #8c6a4e;
-        margin: 1rem 0 0.3rem 0;
+        color: #d4845a;
+        margin: 1.2rem 0 0.5rem 0;
+        border-bottom: 1px solid #eee;
     }
 
-    /* Sidebar */
+    /* Sidebar - Dunkler Kontrast verbessert */
     section[data-testid="stSidebar"] {
-        background: #2c1a0e;
+        background-color: #2c1a0e !important;
     }
-    section[data-testid="stSidebar"] * {
+    section[data-testid="stSidebar"] .stMarkdown, 
+    section[data-testid="stSidebar"] label, 
+    section[data-testid="stSidebar"] .stSlider p {
         color: #f5e6d3 !important;
     }
-    section[data-testid="stSidebar"] .stSlider > div > div > div > div {
-        background: #d4845a;
+    
+    /* Input Fields in Sidebar */
+    section[data-testid="stSidebar"] div[data-baseweb="input"] {
+        background-color: #3d2b1f !important;
+        border-color: #4a3629 !important;
     }
-
+    
     /* No results */
     .no-results {
         text-align: center;
         padding: 4rem 2rem;
         color: #8c6a4e;
     }
-    .no-results h2 {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.8rem;
-        color: #2c1a0e;
-    }
 
-    /* Hide default streamlit footer */
     footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
 
 # ── Google Sheets Connection ──────────────────────────────────────────────────
-@st.cache_data(ttl=300)  # Cache für 5 Minuten
+@st.cache_data(ttl=300)
 def load_data() -> pd.DataFrame:
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets.readonly",
@@ -165,11 +140,10 @@ def load_data() -> pd.DataFrame:
     )
     client = gspread.authorize(creds)
     sheet = client.open_by_url(st.secrets["spreadsheet_url"])
-    worksheet = sheet.get_worksheet(0)  # erstes Tabellenblatt
+    worksheet = sheet.get_worksheet(0)
     data = worksheet.get_all_records()
     df = pd.DataFrame(data)
 
-    # Spaltenbereinigung
     df.columns = df.columns.str.strip()
     df = df.dropna(subset=["Name des Gerichts"])
     df = df[df["Name des Gerichts"].astype(str).str.strip() != ""]
@@ -194,7 +168,6 @@ with st.spinner("Rezepte werden geladen …"):
         df = load_data()
     except Exception as e:
         st.error(f"❌ Fehler beim Laden der Daten: {e}")
-        st.info("Stelle sicher, dass die Google Sheets Verbindung in den Streamlit Secrets korrekt konfiguriert ist.")
         st.stop()
 
 if df.empty:
@@ -207,16 +180,14 @@ with st.sidebar:
     st.markdown("## 🔍 Filter")
     st.markdown("---")
 
-    # Textsuche
     search_term = st.text_input("Suche nach Gericht", placeholder="z. B. Pasta, Suppe …")
 
     st.markdown("---")
 
-    # Zeit-Slider
     min_zeit = int(df["Benötigte Zeit"].min())
     max_zeit = int(df["Benötigte Zeit"].max())
     if min_zeit == max_zeit:
-        max_zeit = min_zeit + 1  # Slider braucht min < max
+        max_zeit = min_zeit + 1
 
     zeit_range = st.slider(
         "⏱️ Benötigte Zeit (Minuten)",
@@ -228,7 +199,6 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Multiselect Filter
     def ms_filter(label, column, emoji=""):
         options = sorted(df[column].dropna().unique().tolist())
         options = [o for o in options if o]
@@ -312,7 +282,6 @@ else:
         zutaten    = row.get("Benötigte Zutaten", "")
         zubereitung = row.get("Zubereitung", "")
 
-        # Badges HTML
         badges = ""
         if kategorie:
             badges += f'<span class="badge badge-kategorie">{kategorie}</span>'
@@ -324,7 +293,6 @@ else:
             badges += f'<span class="badge {aufwand_class(aufwand)}">{aufwand}</span>'
 
         with st.expander(f"🍽️ {name}  •  ⏱️ {zeit} min", expanded=False):
-            # Badges Zeile
             st.markdown(badges, unsafe_allow_html=True)
             st.markdown("")
 
@@ -333,8 +301,7 @@ else:
             with col_l:
                 st.markdown('<div class="section-label">🧂 Zutaten</div>', unsafe_allow_html=True)
                 if zutaten:
-                    # Zutaten als Liste formatieren (getrennt durch Komma oder Zeilenumbruch)
-                    items = [z.strip() for z in zutaten.replace("\n", ",").split(",") if z.strip()]
+                    items = [z.strip() for z in str(zutaten).replace("\n", ",").split(",") if z.strip()]
                     for item in items:
                         st.markdown(f"• {item}")
                 else:
@@ -342,15 +309,14 @@ else:
 
                 if equipment:
                     st.markdown('<div class="section-label">🔧 Equipment</div>', unsafe_allow_html=True)
-                    eq_items = [e.strip() for e in equipment.replace("\n", ",").split(",") if e.strip()]
+                    eq_items = [e.strip() for e in str(equipment).replace("\n", ",").split(",") if e.strip()]
                     for eq in eq_items:
                         st.markdown(f"• {eq}")
 
             with col_r:
                 st.markdown('<div class="section-label">👨‍🍳 Zubereitung</div>', unsafe_allow_html=True)
                 if zubereitung:
-                    # Nummerierte Schritte falls durch Zeilenumbrüche getrennt
-                    steps = [s.strip() for s in zubereitung.split("\n") if s.strip()]
+                    steps = [s.strip() for s in str(zubereitung).split("\n") if s.strip()]
                     if len(steps) > 1:
                         for i, step in enumerate(steps, 1):
                             st.markdown(f"**{i}.** {step}")
