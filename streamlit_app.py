@@ -45,7 +45,19 @@ st.markdown("""
     /* ── RESET & BASE ── */
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
-        color: #2c1a0e;
+        color: #1a0e06;
+    }
+
+    /* ── GLOBALE LESBARKEIT: alle nativen Streamlit-Texte ── */
+    /* Stellt sicher, dass kein Element mit dunklem Hintergrund
+       unsichtbaren dunklen Text trägt */
+    p, span, label, div, li, h1, h2, h3, h4, h5, h6 {
+        color: inherit;
+    }
+
+    /* Streamlit-interne Markdown-Texte immer dunkel auf hellem Grund */
+    .stMarkdown p, .stMarkdown span, .stMarkdown li {
+        color: #1a0e06 !important;
     }
 
     /* ── APP BACKGROUND ── */
@@ -179,8 +191,23 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
     }
     .stExpander [data-testid="stExpanderDetails"] {
-        color: #2c1a0e !important;
+        color: #1a0e06 !important;
         padding: 1.5rem 1.8rem !important;
+    }
+    /* Alle Texte INNERHALB eines Expanders explizit dunkel */
+    .stExpander [data-testid="stExpanderDetails"] p,
+    .stExpander [data-testid="stExpanderDetails"] span,
+    .stExpander [data-testid="stExpanderDetails"] label,
+    .stExpander [data-testid="stExpanderDetails"] div,
+    .stExpander [data-testid="stExpanderDetails"] li {
+        color: #1a0e06 !important;
+    }
+    /* Checkbox-Labels überall lesbar */
+    [data-testid="stCheckbox"] label,
+    [data-testid="stCheckbox"] span,
+    [data-testid="stCheckbox"] p {
+        color: #1a0e06 !important;
+        font-size: 0.92rem !important;
     }
 
     /* ══════════════════════════════════════════════════════
@@ -349,16 +376,41 @@ st.markdown("""
     section[data-testid="stSidebar"] .stMarkdown,
     section[data-testid="stSidebar"] label,
     section[data-testid="stSidebar"] .stSlider p,
-    section[data-testid="stSidebar"] p {
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span {
+        color: #f5e6d3 !important;
+    }
+    /* Multiselect-Tags und Dropdown-Texte in der Sidebar */
+    section[data-testid="stSidebar"] [data-baseweb="tag"] span,
+    section[data-testid="stSidebar"] [data-baseweb="select"] span,
+    section[data-testid="stSidebar"] [data-baseweb="select"] div {
         color: #f5e6d3 !important;
     }
     section[data-testid="stSidebar"] div[data-baseweb="input"] {
         background-color: #3d2b1f !important;
         border-color: #5a3e2e !important;
     }
+    section[data-testid="stSidebar"] div[data-baseweb="input"] input {
+        color: #f5e6d3 !important;
+    }
     section[data-testid="stSidebar"] h2 {
         color: #ffd580 !important;
         font-family: 'Playfair Display', serif !important;
+    }
+    /* Sidebar-Expander (Zutaten-Kategorien): Text muss lesbar bleiben */
+    section[data-testid="stSidebar"] .stExpander summary p {
+        color: #f5e6d3 !important;
+    }
+    section[data-testid="stSidebar"] .stExpander {
+        background-color: #3d2b1f !important;
+        border-color: #5a3e2e !important;
+    }
+    section[data-testid="stSidebar"] .stExpander [data-testid="stExpanderDetails"] p,
+    section[data-testid="stSidebar"] .stExpander [data-testid="stExpanderDetails"] span,
+    section[data-testid="stSidebar"] .stExpander [data-testid="stExpanderDetails"] label,
+    section[data-testid="stSidebar"] [data-testid="stCheckbox"] label,
+    section[data-testid="stSidebar"] [data-testid="stCheckbox"] span {
+        color: #f5e6d3 !important;
     }
 
     /* ══════════════════════════════════════════════════════
@@ -576,6 +628,48 @@ def parse_zutat_display(zutat_str: str) -> tuple[str, str]:
     if match:
         return match.group(1).strip(), match.group(2).strip()
     return "", zutat_str.strip()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SCHRITT-PARSER – Zubereitung in einzelne Schritte aufteilen
+# Unterstützt zwei Formate aus Google Sheets:
+#   A) Zeilenumbrüche: "Schritt 1\nSchritt 2\n..."
+#   B) Nummerierte Liste in einer Zeile: "1. Zwiebeln... 2. Öl... 3. ..."
+# ══════════════════════════════════════════════════════════════════════════════
+def parse_zubereitung_steps(zubereitung_str: str) -> list[str]:
+    """
+    Gibt eine Liste der einzelnen Zubereitungsschritte zurück.
+    Erkennungslogik:
+    1. Erst per Zeilenumbruch splitten (Format A).
+    2. Falls nur 1 Zeile → versuche nummerierte Schritte via Regex zu finden (Format B).
+       Muster: "1. Text 2. Text" oder "1) Text 2) Text"
+    """
+    # Format A: Zeilenumbrüche
+    by_newline = [s.strip() for s in str(zubereitung_str).split("\n") if s.strip()]
+    if len(by_newline) > 1:
+        return by_newline
+
+    # Format B: Nummerierung in einem langen String
+    # Regex: Trenne an "Ziffer. " oder "Ziffer) " am Anfang eines Schritts
+    text = str(zubereitung_str).strip()
+    # Splitpunkte finden: "2. ", "3. " usw. (aber NICHT "z. B." = Kleinbuchstabe)
+    parts = re.split(r'(?<!\w)(\d+[\.\)]\s+)', text)
+    # parts sieht aus wie: ['', '1. ', 'Schritt eins ', '2. ', 'Schritt zwei']
+    # Zusammenbauen: Nummer + Text wieder verbinden
+    steps = []
+    i = 1
+    while i < len(parts) - 1:
+        nummer = parts[i].strip()
+        inhalt = parts[i + 1].strip() if i + 1 < len(parts) else ""
+        if inhalt:
+            steps.append(f"{nummer} {inhalt}")
+        i += 2
+
+    if len(steps) > 1:
+        return steps
+
+    # Fallback: gesamter Text als ein Schritt
+    return [text] if text else []
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -936,7 +1030,9 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
             st.markdown('<div class="section-label">👨‍🍳 Zubereitung</div>', unsafe_allow_html=True)
 
             if zubereitung:
-                steps = [s.strip() for s in str(zubereitung).split("\n") if s.strip()]
+                # parse_zubereitung_steps erkennt sowohl Zeilenumbrüche
+                # als auch nummerierte Schritte in einem einzigen String
+                steps = parse_zubereitung_steps(zubereitung)
 
                 if len(steps) > 1:
                     # Initialisiere Fortschritts-Set für dieses Rezept
@@ -952,14 +1048,13 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
                     if fertig > 0:
                         st.progress(fertig / gesamt, text=f"{fertig}/{gesamt} Schritte erledigt")
 
-                    # Schritte als Checkboxen
+                    # Schritte als Checkboxen – jeder Schritt in eigener Zeile
                     for i, step in enumerate(steps):
                         is_done = i in done_steps
                         checked = st.checkbox(
-                            f"Schritt {i+1}: {step[:80]}{'…' if len(step) > 80 else ''}",
+                            step,
                             value=is_done,
                             key=f"step_{idx_key}_{name}_{i}",
-                            help=step if len(step) > 80 else None
                         )
                         if checked:
                             st.session_state.completed_steps[key].add(i)
@@ -972,7 +1067,9 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
                             st.session_state.completed_steps[key] = set()
                             st.rerun()
                 else:
-                    st.markdown(zubereitung)
+                    # Einzelner Text-Block: trotzdem per Nummerierung splitten versuchen
+                    for step in steps:
+                        st.markdown(step)
             else:
                 st.markdown("_Keine Zubereitung angegeben_")
 
@@ -1306,7 +1403,7 @@ with tab3:
                         zubereitung = row.get("Zubereitung", "")
                         if zubereitung:
                             st.markdown('<div class="section-label">👨‍🍳 Zubereitung</div>', unsafe_allow_html=True)
-                            steps = [s.strip() for s in str(zubereitung).split("\n") if s.strip()]
+                            steps = parse_zubereitung_steps(zubereitung)
                             if len(steps) > 1:
                                 key = f"match_steps_{name}"
                                 if key not in st.session_state.completed_steps:
@@ -1316,7 +1413,7 @@ with tab3:
                                     st.progress(len(done)/len(steps), text=f"{len(done)}/{len(steps)} erledigt")
                                 for i, step in enumerate(steps):
                                     checked = st.checkbox(
-                                        f"Schritt {i+1}: {step[:80]}{'…' if len(step)>80 else ''}",
+                                        step,
                                         value=(i in done),
                                         key=f"mstep_{idx}_{i}"
                                     )
@@ -1325,7 +1422,8 @@ with tab3:
                                     else:
                                         done.discard(i)
                             else:
-                                st.markdown(zubereitung)
+                                for step in steps:
+                                    st.markdown(step)
 
                         # Koch-Tipps auch im Zutaten-Check
                         tipps = row.get("Koch-Tipps", "") if "Koch-Tipps" in row.index else ""
