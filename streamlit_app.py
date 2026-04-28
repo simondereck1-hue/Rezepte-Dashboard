@@ -42,28 +42,536 @@ st.markdown("""
     /* ── FONTS ── */
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
 
-    /* ── RESET & BASE ── */
-    html, body, [class*="css"] {
+    /* ══════════════════════════════════════════════════════
+       GLOBALE LESBARKEIT – Fundament
+       Alle Streamlit-Elemente erben von hier.
+       Kein Element darf jemals dunkel-auf-dunkel sein.
+    ══════════════════════════════════════════════════════ */
+    html, body {
+        font-family: 'Inter', sans-serif !important;
+    }
+    /* Streamlit überschreibt seine eigenen Farben via [class*="css"] —
+       wir setzen hier explizit eine sichere Basis */
+    [class*="css"], [class*="st-"] {
         font-family: 'Inter', sans-serif;
-        color: #1a0e06;
-    }
-
-    /* ── GLOBALE LESBARKEIT: alle nativen Streamlit-Texte ── */
-    /* Stellt sicher, dass kein Element mit dunklem Hintergrund
-       unsichtbaren dunklen Text trägt */
-    p, span, label, div, li, h1, h2, h3, h4, h5, h6 {
-        color: inherit;
-    }
-
-    /* Streamlit-interne Markdown-Texte immer dunkel auf hellem Grund */
-    .stMarkdown p, .stMarkdown span, .stMarkdown li {
-        color: #1a0e06 !important;
     }
 
     /* ── APP BACKGROUND ── */
     .stApp {
         background: linear-gradient(160deg, #fdf6ec 0%, #fef9f4 60%, #fdf0e0 100%);
     }
+
+    /* ══════════════════════════════════════════════════════
+       TABS – "Alle Rezepte", "Favoriten", "Zutaten-Check"
+       Streamlit rendert Tabs als <button role="tab">.
+       Ohne expliziten Override sind sie je nach Theme
+       dunkel-auf-dunkel (nicht lesbar).
+    ══════════════════════════════════════════════════════ */
+    [data-testid="stTabs"] [role="tablist"] {
+        background: transparent !important;
+        border-bottom: 2px solid #e8ddd4 !important;
+    }
+    /* Inaktive Tabs */
+    [data-testid="stTabs"] button[role="tab"] {
+        color: #6b4c35 !important;
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0.6rem 1.2rem !important;
+    }
+    /* Aktiver Tab */
+    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: #b5501e !important;
+        border-bottom: 3px solid #b5501e !important;
+        background: transparent !important;
+    }
+    /* Hover */
+    [data-testid="stTabs"] button[role="tab"]:hover {
+        color: #b5501e !important;
+        background: rgba(181, 80, 30, 0.06) !important;
+    }
+    /* Tab-Inhalt Bereich */
+    [data-testid="stTabsContent"] {
+        padding-top: 1rem !important;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       EXPANDER – Header (der "schwarze Kasten")
+       Streamlit setzt den summary-Hintergrund dynamisch.
+       Wir erzwingen weißen Hintergrund + dunklen Text
+       für ALLE Expander außerhalb der Sidebar.
+    ══════════════════════════════════════════════════════ */
+    .stExpander {
+        background-color: #ffffff !important;
+        border-radius: 14px !important;
+        border: 1px solid #e8ddd4 !important;
+        margin-bottom: 0.85rem !important;
+        overflow: hidden !important;
+        box-shadow: 0 2px 8px rgba(44, 26, 14, 0.06) !important;
+        transition: box-shadow 0.25s ease, transform 0.2s ease !important;
+    }
+    .stExpander:hover {
+        box-shadow: 0 6px 20px rgba(44, 26, 14, 0.12) !important;
+        transform: translateY(-1px) !important;
+    }
+    /* Expander-Header: immer heller Hintergrund */
+    .stExpander summary,
+    .stExpander [data-testid="stExpanderToggleIcon"],
+    details summary {
+        background-color: #ffffff !important;
+        color: #2c1a0e !important;
+    }
+    .stExpander summary:hover {
+        background-color: #fdf6ec !important;
+    }
+    /* Der Titeltext im Expander-Header */
+    .stExpander summary p,
+    .stExpander summary span,
+    .stExpander summary div,
+    details summary p,
+    details summary span {
+        color: #2c1a0e !important;
+        font-weight: 600 !important;
+        font-size: 1.05rem !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    /* Pfeil-Icon lesbar */
+    .stExpander summary svg {
+        fill: #2c1a0e !important;
+        color: #2c1a0e !important;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       EXPANDER INHALT – alle Kindelemente dunkel
+    ══════════════════════════════════════════════════════ */
+    .stExpander [data-testid="stExpanderDetails"],
+    details[open] > div {
+        background-color: #ffffff !important;
+        color: #1a0e06 !important;
+        padding: 1.5rem 1.8rem !important;
+    }
+    .stExpander [data-testid="stExpanderDetails"] *:not(.badge):not(.fav-badge):not(.match-badge-full):not(.match-badge-partial):not(.zutat-tag):not(.zutat-tag-missing):not(.tipp-box-title):not(.tipp-box-text):not(.section-label):not(.hero-title):not(.hero-subtitle):not(.hero-stat-number):not(.hero-stat-label):not(.zutat-menge) {
+        color: #1a0e06 !important;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       CHECKBOXEN – Labels & Text immer dunkel
+    ══════════════════════════════════════════════════════ */
+    [data-testid="stCheckbox"] label p,
+    [data-testid="stCheckbox"] label span,
+    [data-testid="stCheckbox"] > label {
+        color: #1a0e06 !important;
+        font-size: 0.92rem !important;
+        font-family: 'Inter', sans-serif !important;
+        line-height: 1.5 !important;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       BUTTONS – Helle Beschriftung auf dunklem Grund
+    ══════════════════════════════════════════════════════ */
+    .stButton button {
+        background-color: #2c1a0e !important;
+        color: #f5e6d3 !important;
+        border: 1px solid #4a2c1a !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: background-color 0.2s ease !important;
+    }
+    .stButton button:hover {
+        background-color: #4a2c1a !important;
+        color: #ffffff !important;
+        border-color: #7a4020 !important;
+    }
+    .stButton button p,
+    .stButton button span {
+        color: #f5e6d3 !important;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       NUMBER INPUT, TEXT INPUT – lesbar
+    ══════════════════════════════════════════════════════ */
+    [data-testid="stNumberInput"] label,
+    [data-testid="stTextInput"] label,
+    [data-testid="stSlider"] label,
+    [data-testid="stMultiSelect"] label {
+        color: #2c1a0e !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    [data-testid="stNumberInput"] input,
+    [data-testid="stTextInput"] input {
+        color: #1a0e06 !important;
+        background-color: #ffffff !important;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       ALLGEMEINE MARKDOWN-TEXTE im Hauptbereich
+    ══════════════════════════════════════════════════════ */
+    .stMarkdown p,
+    .stMarkdown span,
+    .stMarkdown li,
+    .stMarkdown h1,
+    .stMarkdown h2,
+    .stMarkdown h3 {
+        color: #1a0e06 !important;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       METRIC CARDS
+    ══════════════════════════════════════════════════════ */
+    [data-testid="stMetricValue"] {
+        color: #2c1a0e !important;
+        font-family: 'Playfair Display', serif !important;
+        font-weight: 700 !important;
+        font-size: 2rem !important;
+    }
+    [data-testid="stMetricLabel"] {
+        color: #8c6a4e !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        font-size: 0.75rem !important;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       HERO HEADER
+    ══════════════════════════════════════════════════════ */
+    .hero-header {
+        background: linear-gradient(135deg, #2c1a0e 0%, #4a2c1a 40%, #7a4020 70%, #d4845a 100%);
+        border-radius: 20px;
+        padding: 3rem 3.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(44, 26, 14, 0.25);
+    }
+    .hero-header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+    .hero-header::after {
+        content: "";
+        position: absolute;
+        bottom: -30%;
+        left: 20%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(212, 132, 90, 0.2) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+    .hero-title {
+        font-family: 'Playfair Display', serif !important;
+        font-size: 3.2rem;
+        font-weight: 700;
+        color: #ffffff !important;
+        margin: 0 0 0.4rem 0;
+        line-height: 1.15;
+        letter-spacing: -0.5px;
+        position: relative;
+        z-index: 1;
+    }
+    .hero-subtitle {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 1.05rem;
+        color: rgba(255,255,255,0.85) !important;
+        margin: 0 0 1.5rem 0;
+        font-weight: 400;
+        position: relative;
+        z-index: 1;
+    }
+    .hero-stats {
+        display: flex;
+        gap: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat-number {
+        font-family: 'Playfair Display', serif !important;
+        font-size: 2rem;
+        font-weight: 700;
+        color: #ffd580 !important;
+        display: block;
+        line-height: 1;
+    }
+    .hero-stat-label {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.75) !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 500;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       BADGES
+    ══════════════════════════════════════════════════════ */
+    .badge {
+        display: inline-block;
+        padding: 0.22rem 0.65rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        margin: 0.15rem;
+        font-family: 'Inter', sans-serif;
+    }
+    .badge-kategorie  { background: #fde8d8; color: #b5501e !important; }
+    .badge-ernaehrung { background: #d6f0e0; color: #1e7a43 !important; }
+    .badge-saison     { background: #dce9fb; color: #1e4d8c !important; }
+    .badge-aufwand-leicht { background: #d6f0e0; color: #1e7a43 !important; }
+    .badge-aufwand-mittel { background: #fff3cd; color: #8a6000 !important; }
+    .badge-aufwand-schwer { background: #fde8d8; color: #b5501e !important; }
+
+    .fav-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #ff6b9d, #c44569);
+        color: #ffffff !important;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       SECTION LABELS
+    ══════════════════════════════════════════════════════ */
+    .section-label {
+        font-size: 0.72rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: #d4845a !important;
+        margin: 1.3rem 0 0.6rem 0;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid #f0e8de;
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       ZUTAT GRID
+    ══════════════════════════════════════════════════════ */
+    .zutat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.4rem;
+        margin-top: 0.5rem;
+    }
+    .zutat-item {
+        background: #fdf6ec;
+        border: 1px solid #ead8c5;
+        border-radius: 8px;
+        padding: 0.35rem 0.6rem;
+        font-size: 0.82rem;
+        color: #2c1a0e !important;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .zutat-menge {
+        font-weight: 700;
+        color: #d4845a !important;
+        white-space: nowrap;
+    }
+    .zutat-name { color: #4a3020 !important; }
+
+    /* ══════════════════════════════════════════════════════
+       INTERAKTIVE CHECKLISTE
+    ══════════════════════════════════════════════════════ */
+    .step-done { opacity: 0.45; text-decoration: line-through; color: #8c6a4e !important; }
+    .step-active { color: #2c1a0e !important; }
+    .step-number {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 24px; height: 24px;
+        background: linear-gradient(135deg, #d4845a, #b5501e);
+        color: #ffffff !important;
+        border-radius: 50%; font-size: 0.7rem; font-weight: 700;
+        margin-right: 0.5rem; flex-shrink: 0;
+    }
+    .step-number-done { background: #c8dfc8 !important; color: #1e7a43 !important; }
+
+    /* ══════════════════════════════════════════════════════
+       GOLD-AKZENT: Koch-Tipps
+    ══════════════════════════════════════════════════════ */
+    .tipp-box {
+        background: linear-gradient(135deg, #fffbf0, #fff8e1);
+        border: 1px solid #f0d080;
+        border-left: 4px solid #d4a017;
+        border-radius: 10px;
+        padding: 1rem 1.2rem;
+        margin-top: 1rem;
+    }
+    .tipp-box-title {
+        font-family: 'Playfair Display', serif !important;
+        font-size: 0.9rem; font-weight: 700;
+        color: #8a6000 !important;
+        margin: 0 0 0.4rem 0;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .tipp-box-text {
+        font-size: 0.88rem; color: #5a4000 !important; line-height: 1.6; margin: 0;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       PORTIONSRECHNER
+    ══════════════════════════════════════════════════════ */
+    .portions-bar {
+        background: linear-gradient(135deg, #2c1a0e, #4a2c1a);
+        border-radius: 10px; padding: 0.8rem 1.2rem;
+        display: flex; align-items: center; gap: 1rem; margin: 0.8rem 0;
+    }
+    .portions-label { color: rgba(255,255,255,0.9) !important; font-size: 0.82rem; font-weight: 500; white-space: nowrap; }
+
+    /* ══════════════════════════════════════════════════════
+       SIDEBAR – dunkles Design, heller Text
+    ══════════════════════════════════════════════════════ */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1e1008 0%, #2c1a0e 100%) !important;
+    }
+    /* ALLE Textelemente in der Sidebar hell setzen */
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] div,
+    section[data-testid="stSidebar"] li,
+    section[data-testid="stSidebar"] .stMarkdown p {
+        color: #f5e6d3 !important;
+    }
+    section[data-testid="stSidebar"] h2 {
+        color: #ffd580 !important;
+        font-family: 'Playfair Display', serif !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="input"] {
+        background-color: #3d2b1f !important;
+        border-color: #5a3e2e !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="input"] input {
+        color: #f5e6d3 !important;
+    }
+    section[data-testid="stSidebar"] [data-baseweb="tag"] span,
+    section[data-testid="stSidebar"] [data-baseweb="select"] span {
+        color: #f5e6d3 !important;
+    }
+    /* Sidebar-Expander: ebenfalls dunkler Hintergrund, heller Text */
+    section[data-testid="stSidebar"] .stExpander {
+        background-color: #3d2b1f !important;
+        border-color: #5a3e2e !important;
+    }
+    section[data-testid="stSidebar"] .stExpander summary,
+    section[data-testid="stSidebar"] details summary {
+        background-color: #3d2b1f !important;
+    }
+    section[data-testid="stSidebar"] .stExpander summary p,
+    section[data-testid="stSidebar"] .stExpander summary span,
+    section[data-testid="stSidebar"] .stExpander summary div,
+    section[data-testid="stSidebar"] details summary p,
+    section[data-testid="stSidebar"] details summary span {
+        color: #f5e6d3 !important;
+    }
+    section[data-testid="stSidebar"] .stExpander summary svg {
+        fill: #f5e6d3 !important;
+        color: #f5e6d3 !important;
+    }
+    section[data-testid="stSidebar"] .stExpander [data-testid="stExpanderDetails"] {
+        background-color: #3d2b1f !important;
+    }
+    section[data-testid="stSidebar"] .stExpander [data-testid="stExpanderDetails"] *,
+    section[data-testid="stSidebar"] [data-testid="stCheckbox"] label,
+    section[data-testid="stSidebar"] [data-testid="stCheckbox"] span,
+    section[data-testid="stSidebar"] [data-testid="stCheckbox"] label p {
+        color: #f5e6d3 !important;
+    }
+    /* Sidebar-Buttons */
+    section[data-testid="stSidebar"] .stButton button {
+        background-color: #5a3e2e !important;
+        color: #f5e6d3 !important;
+        border-color: #7a5a45 !important;
+    }
+    section[data-testid="stSidebar"] .stButton button:hover {
+        background-color: #7a5a45 !important;
+    }
+    section[data-testid="stSidebar"] .stButton button p,
+    section[data-testid="stSidebar"] .stButton button span {
+        color: #f5e6d3 !important;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       ZUTATEN-CHECK UI
+    ══════════════════════════════════════════════════════ */
+    .zutat-check-header {
+        background: linear-gradient(135deg, #fdf6ec 0%, #fde8d8 100%);
+        border-radius: 16px; padding: 1.5rem 2rem; margin-bottom: 1.5rem;
+        border: 1px solid #e0d5c8;
+    }
+    .zutat-check-header h2 {
+        font-family: 'Playfair Display', serif !important;
+        font-size: 1.8rem; color: #2c1a0e !important; margin: 0 0 0.3rem 0;
+    }
+    .zutat-check-header p {
+        color: #6b4c35 !important; margin: 0; font-size: 0.92rem;
+        font-family: 'Inter', sans-serif !important;
+    }
+    .match-badge-full {
+        background: linear-gradient(135deg, #1e7a43, #27ae60);
+        color: #ffffff !important; padding: 0.25rem 0.7rem; border-radius: 20px;
+        font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .match-badge-partial {
+        background: linear-gradient(135deg, #d4845a, #b5501e);
+        color: #ffffff !important; padding: 0.25rem 0.7rem; border-radius: 20px;
+        font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .zutat-tag {
+        display: inline-block; background: #fde8d8; color: #8a3010 !important;
+        border-radius: 12px; padding: 0.2rem 0.6rem; font-size: 0.78rem;
+        margin: 0.1rem; font-weight: 600;
+    }
+    .zutat-tag-missing {
+        display: inline-block; background: #f5e6e6; color: #7a2020 !important;
+        border-radius: 12px; padding: 0.2rem 0.6rem; font-size: 0.78rem;
+        margin: 0.1rem; font-weight: 600; text-decoration: line-through; opacity: 0.75;
+    }
+    .no-results { text-align: center; padding: 4rem 2rem; color: #6b4c35 !important; }
+
+    .fav-bar {
+        background: linear-gradient(135deg, #fff8f0, #ffeedd);
+        border: 1px solid #e8c8a0; border-radius: 12px;
+        padding: 0.8rem 1.2rem; margin-bottom: 1.2rem;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       DRUCK-MODUS – DIN-A4
+    ══════════════════════════════════════════════════════ */
+    @media print {
+        section[data-testid="stSidebar"],
+        .stButton, [data-testid="stToolbar"],
+        [data-testid="stHeader"],
+        .stTabs [role="tablist"],
+        footer { display: none !important; }
+        .stApp, html, body { background: white !important; color: black !important; }
+        .hero-header { background: #2c1a0e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .stExpander { box-shadow: none !important; border: 1px solid #ccc !important; page-break-inside: avoid; }
+        .section-label { color: #555 !important; }
+        .badge { border: 1px solid #ccc !important; }
+        [data-testid="stMetricValue"], [data-testid="stMetricLabel"] { color: black !important; }
+        .zutat-item { background: #f9f9f9 !important; }
+        .tipp-box { background: #fffde7 !important; -webkit-print-color-adjust: exact; }
+        @page { size: A4 portrait; margin: 18mm 15mm 18mm 15mm; }
+    }
+
+    footer { visibility: hidden; }
+</style>
+"""
 
     /* ══════════════════════════════════════════════════════
        HERO HEADER – Das emotionale Herzstück
