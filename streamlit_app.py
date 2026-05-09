@@ -1,16 +1,16 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║         REZEPT-DASHBOARD PRO – High-End Version                             ║
-║         Erstellt auf Basis des bestehenden Dashboards                       ║
+║         MEIN KOCHBUCH – "Die Seele der Küche"                               ║
+║         Liebenswert. Handgefertigt. Persönlich.                             ║
 ║                                                                              ║
-║  NEU in dieser Version:                                                     ║
-║  ✦ Hero-Header mit Verlauf & Premium-Typografie                             ║
+║  ✦ Warmes Kochbuch-Design (Cremeweiß, Salbei, Terrakotta, Senf)            ║
+║  ✦ Verspielte, abgerundete Formen – kein harter Business-Look               ║
+║  ✦ Intelligente Zutaten-Normalisierung (Regex-Cleaner)                      ║
+║  ✦ Mengenangaben & Einheiten werden beim Abgleich ignoriert                 ║
 ║  ✦ Favoriten-Funktion (Session State)                                       ║
 ║  ✦ Portionsrechner mit Regex-basierter Mengenumrechnung                     ║
 ║  ✦ Interaktive Schritt-Checkliste (Koch-Modus)                              ║
-║  ✦ Verbessertes Singular/Plural-Matching (Tomate/Tomaten)                   ║
-║  ✦ Koch-Tipps Sektion mit Gold-Akzenten                                     ║
-║  ✦ Druck-Modus CSS für DIN-A4                                               ║
+║  ✦ Google-Sheets-Backend (unverändert)                                      ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -22,528 +22,645 @@ from google.oauth2.service_account import Credentials
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="🍽️ Rezept-Dashboard Pro",
-    page_icon="🍽️",
+    page_title="🥘 Mein Kochbuch",
+    page_icon="🥘",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── HIGH-END CSS ──────────────────────────────────────────────────────────────
-# Komplettes Design-System mit:
-# - Google Fonts (Playfair Display + Inter)
-# - Hero-Gradient-Header
-# - Gold-Akzent-System
-# - Micro-Interactions (Hover-Effekte)
-# - Druck-Modus (@media print)
-# - Checklisten-Styling
-# - Portionsrechner-UI
+# ══════════════════════════════════════════════════════════════════════════════
+# CSS DESIGN-SYSTEM: „Die Seele der Küche"
+#
+# Farbpalette:
+#   --creme      #FDF8F2  → warmes Hintergrundweiß (Leinen)
+#   --kaffee     #3D2314  → dunkles Kaffeebraun (Text)
+#   --terrakotta #C8603A  → warmer Akzent (Hauptfarbe)
+#   --salbei     #7A9E7E  → kühler Gegenpol (Grün)
+#   --senf       #D4A017  → goldgelber Akzent (Tipps, Badges)
+#   --rosé       #F5C2B0  → zartes Pfirsichrosa (Hover, Hintergrund)
+#   --sand       #EDE0D4  → warmes Sandbeige (Karten, Ränder)
+# ══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-    /* ── FONTS ── */
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+    /* ═══════════════════════════════════════════════════════
+       FONTS: Lora (serif, charaktervoll) + Nunito (rund, freundlich)
+    ═══════════════════════════════════════════════════════ */
+    @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,700;1,400;1,600&family=Nunito:wght@300;400;600;700;800&display=swap');
 
-    /* ── RESET & BASE ── */
+    /* ═══════════════════════════════════════════════════════
+       CSS CUSTOM PROPERTIES (Design Tokens)
+    ═══════════════════════════════════════════════════════ */
+    :root {
+        --creme:      #FDF8F2;
+        --kaffee:     #3D2314;
+        --kaffee-mid: #6B3E26;
+        --terrakotta: #C8603A;
+        --terra-soft: #F5E0D6;
+        --salbei:     #7A9E7E;
+        --salbei-soft:#DFF0E2;
+        --senf:       #D4A017;
+        --senf-soft:  #FFF5D6;
+        --rosé:       #F5C2B0;
+        --sand:       #EDE0D4;
+        --sand-mid:   #D9C9BA;
+        --weiss:      #FFFFFF;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       RESET & BASIS-SCHRIFTEN
+    ═══════════════════════════════════════════════════════ */
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-        color: #1a0e06;
+        font-family: 'Nunito', sans-serif;
+        color: var(--kaffee);
     }
-
-    /* ── GLOBALE LESBARKEIT: alle nativen Streamlit-Texte ── */
-    /* Stellt sicher, dass kein Element mit dunklem Hintergrund
-       unsichtbaren dunklen Text trägt */
-    p, span, label, div, li, h1, h2, h3, h4, h5, h6 {
-        color: inherit;
-    }
-
-    /* Streamlit-interne Markdown-Texte immer dunkel auf hellem Grund */
+    p, span, label, div, li { color: inherit; }
     .stMarkdown p, .stMarkdown span, .stMarkdown li {
-        color: #1a0e06 !important;
+        color: var(--kaffee) !important;
+        font-family: 'Nunito', sans-serif !important;
     }
 
-    /* ── APP BACKGROUND ── */
+    /* ═══════════════════════════════════════════════════════
+       APP HINTERGRUND – warmes Cremeweiß mit subtiler Textur
+       (Wiederholendes Muster aus großen Punkten = Brotteig-Vibe)
+    ═══════════════════════════════════════════════════════ */
     .stApp {
-        background: linear-gradient(160deg, #fdf6ec 0%, #fef9f4 60%, #fdf0e0 100%);
+        background-color: var(--creme);
+        background-image:
+            radial-gradient(circle at 1px 1px, rgba(200,96,58,0.05) 1px, transparent 0);
+        background-size: 32px 32px;
     }
 
-    /* ══════════════════════════════════════════════════════
-       HERO HEADER – Das emotionale Herzstück
-       Ein sanfter Verlauf suggeriert Wärme und Appetit.
-    ══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════
+       HERO HEADER – warm & einladend, wie ein Kochbuch-Cover
+    ═══════════════════════════════════════════════════════ */
     .hero-header {
-        background: linear-gradient(135deg, #2c1a0e 0%, #4a2c1a 40%, #7a4020 70%, #d4845a 100%);
-        border-radius: 20px;
-        padding: 3rem 3.5rem;
-        margin-bottom: 2rem;
+        background:
+            radial-gradient(ellipse at 20% 50%, rgba(212,160,23,0.25) 0%, transparent 60%),
+            radial-gradient(ellipse at 80% 20%, rgba(122,158,126,0.2) 0%, transparent 50%),
+            linear-gradient(135deg, #8B3A1E 0%, #C8603A 45%, #E8845A 100%);
+        border-radius: 28px;
+        padding: 2.8rem 3.5rem 2.5rem 3.5rem;
+        margin-bottom: 2.2rem;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 8px 32px rgba(44, 26, 14, 0.25);
+        box-shadow:
+            0 8px 32px rgba(61, 35, 20, 0.18),
+            0 2px 8px rgba(61, 35, 20, 0.10);
     }
-    /* Dekoratives Muster im Hero */
+    /* Dekorative Kreise – wie Teller-Silhouetten */
     .hero-header::before {
-        content: "";
+        content: "🍳";
+        font-size: 10rem;
         position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 400px;
-        height: 400px;
-        background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
-        border-radius: 50%;
+        right: 4%;
+        top: 50%;
+        transform: translateY(-50%) rotate(-15deg);
+        opacity: 0.12;
+        line-height: 1;
     }
     .hero-header::after {
         content: "";
         position: absolute;
-        bottom: -30%;
-        left: 20%;
-        width: 300px;
-        height: 300px;
-        background: radial-gradient(circle, rgba(212, 132, 90, 0.2) 0%, transparent 70%);
+        bottom: -60px;
+        left: -40px;
+        width: 200px;
+        height: 200px;
         border-radius: 50%;
+        background: rgba(255,255,255,0.06);
     }
     .hero-title {
-        font-family: 'Playfair Display', serif;
-        font-size: 3.2rem;
+        font-family: 'Lora', serif;
+        font-size: 2.8rem;
         font-weight: 700;
-        color: #fff;
-        margin: 0 0 0.4rem 0;
-        line-height: 1.15;
-        letter-spacing: -0.5px;
+        font-style: italic;
+        color: #FFF8F0;
+        margin: 0 0 0.3rem 0;
+        line-height: 1.2;
         position: relative;
         z-index: 1;
+        text-shadow: 0 2px 12px rgba(61,35,20,0.3);
     }
     .hero-subtitle {
-        font-family: 'Inter', sans-serif;
-        font-size: 1.05rem;
-        color: rgba(255,255,255,0.75);
-        margin: 0 0 1.5rem 0;
-        font-weight: 300;
+        font-family: 'Nunito', sans-serif;
+        font-size: 1rem;
+        color: rgba(255, 248, 240, 0.82);
+        margin: 0 0 1.8rem 0;
+        font-weight: 400;
         position: relative;
         z-index: 1;
     }
     .hero-stats {
         display: flex;
-        gap: 2rem;
+        gap: 1.5rem;
         position: relative;
         z-index: 1;
+        flex-wrap: wrap;
     }
     .hero-stat {
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(4px);
+        border-radius: 16px;
+        padding: 0.6rem 1.2rem;
         text-align: center;
+        border: 1px solid rgba(255,255,255,0.2);
     }
     .hero-stat-number {
-        font-family: 'Playfair Display', serif;
-        font-size: 2rem;
+        font-family: 'Lora', serif;
+        font-size: 1.8rem;
         font-weight: 700;
-        color: #ffd580;
+        color: #FFECD0;
         display: block;
         line-height: 1;
     }
     .hero-stat-label {
-        font-size: 0.75rem;
-        color: rgba(255,255,255,0.65);
+        font-size: 0.7rem;
+        color: rgba(255, 248, 240, 0.75);
         text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: 500;
+        letter-spacing: 1.2px;
+        font-weight: 700;
+        font-family: 'Nunito', sans-serif;
     }
 
-    /* ══════════════════════════════════════════════════════
-       METRIC CARDS
-    ══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════
+       METRIC CARDS – sanft & warm
+    ═══════════════════════════════════════════════════════ */
     [data-testid="stMetricValue"] {
-        color: #2c1a0e !important;
-        font-family: 'Playfair Display', serif !important;
+        color: var(--terrakotta) !important;
+        font-family: 'Lora', serif !important;
         font-weight: 700 !important;
-        font-size: 2rem !important;
+        font-size: 1.9rem !important;
     }
     [data-testid="stMetricLabel"] {
-        color: #8c6a4e !important;
-        font-weight: 600 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
+        color: var(--kaffee-mid) !important;
+        font-weight: 700 !important;
         font-size: 0.75rem !important;
+        letter-spacing: 0.3px !important;
+    }
+    [data-testid="metric-container"] {
+        background: var(--weiss) !important;
+        border-radius: 20px !important;
+        padding: 1rem 1.2rem !important;
+        border: 1.5px solid var(--sand) !important;
+        box-shadow: 0 2px 10px rgba(61,35,20,0.06) !important;
     }
 
-    /* ══════════════════════════════════════════════════════
-       RECIPE EXPANDER – „Weich" & Premium
-       Micro-Interaction: sanfter Hover-Übergang
-    ══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════
+       TABS – rund & freundlich
+    ═══════════════════════════════════════════════════════ */
+    .stTabs [data-baseweb="tab-list"] {
+        background: var(--sand) !important;
+        border-radius: 24px !important;
+        padding: 4px !important;
+        gap: 4px !important;
+        border: none !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 20px !important;
+        font-family: 'Nunito', sans-serif !important;
+        font-weight: 700 !important;
+        font-size: 0.88rem !important;
+        color: var(--kaffee-mid) !important;
+        padding: 0.5rem 1.2rem !important;
+        transition: all 0.25s ease !important;
+        border: none !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background: var(--weiss) !important;
+        color: var(--terrakotta) !important;
+        box-shadow: 0 2px 8px rgba(61,35,20,0.12) !important;
+    }
+    .stTabs [data-baseweb="tab-panel"] {
+        padding-top: 1.5rem !important;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       REZEPT-EXPANDER – Kochbuch-Karte, verspielt & warm
+       Micro-Interaction: leichte Drehung + Hoch-Effekt beim Hover
+    ═══════════════════════════════════════════════════════ */
     .stExpander {
-        background-color: #ffffff !important;
-        border-radius: 14px !important;
-        border: 1px solid #e8ddd4 !important;
-        margin-bottom: 0.85rem !important;
+        background-color: var(--weiss) !important;
+        border-radius: 24px !important;
+        border: 1.5px solid var(--sand) !important;
+        margin-bottom: 1rem !important;
         overflow: hidden;
-        box-shadow: 0 2px 8px rgba(44, 26, 14, 0.06);
-        transition: box-shadow 0.25s ease, transform 0.2s ease !important;
+        box-shadow:
+            0 3px 12px rgba(61,35,20,0.07),
+            0 1px 4px rgba(61,35,20,0.04);
+        transition:
+            box-shadow 0.3s ease,
+            transform 0.3s ease !important;
     }
     .stExpander:hover {
-        box-shadow: 0 6px 20px rgba(44, 26, 14, 0.12) !important;
-        transform: translateY(-1px);
+        box-shadow:
+            0 10px 32px rgba(61,35,20,0.14),
+            0 2px 8px rgba(61,35,20,0.08) !important;
+        transform: translateY(-3px) rotate(0.4deg) !important;
     }
     .stExpander summary {
-        transition: background-color 0.2s ease !important;
+        padding: 1rem 1.4rem !important;
+        transition: background-color 0.25s ease !important;
     }
     .stExpander summary:hover {
-        background-color: #fdf6ec !important;
+        background-color: var(--terra-soft) !important;
     }
     .stExpander summary p {
-        color: #2c1a0e !important;
-        font-weight: 600 !important;
-        font-size: 1.05rem !important;
-        font-family: 'Inter', sans-serif !important;
+        color: var(--kaffee) !important;
+        font-weight: 700 !important;
+        font-size: 1.02rem !important;
+        font-family: 'Nunito', sans-serif !important;
     }
     .stExpander [data-testid="stExpanderDetails"] {
-        color: #1a0e06 !important;
-        padding: 1.5rem 1.8rem !important;
+        color: var(--kaffee) !important;
+        padding: 1.2rem 1.6rem 1.4rem 1.6rem !important;
     }
-    /* Alle Texte INNERHALB eines Expanders explizit dunkel */
     .stExpander [data-testid="stExpanderDetails"] p,
     .stExpander [data-testid="stExpanderDetails"] span,
     .stExpander [data-testid="stExpanderDetails"] label,
     .stExpander [data-testid="stExpanderDetails"] div,
     .stExpander [data-testid="stExpanderDetails"] li {
-        color: #1a0e06 !important;
+        color: var(--kaffee) !important;
     }
-    /* Checkbox-Labels überall lesbar */
     [data-testid="stCheckbox"] label,
     [data-testid="stCheckbox"] span,
     [data-testid="stCheckbox"] p {
-        color: #1a0e06 !important;
+        color: var(--kaffee) !important;
         font-size: 0.92rem !important;
+        font-family: 'Nunito', sans-serif !important;
     }
 
-    /* ══════════════════════════════════════════════════════
-       BADGES
-    ══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════
+       BADGES – organisch & rund
+    ═══════════════════════════════════════════════════════ */
     .badge {
         display: inline-block;
-        padding: 0.22rem 0.65rem;
+        padding: 0.22rem 0.75rem;
         border-radius: 20px;
         font-size: 0.7rem;
-        font-weight: 600;
-        letter-spacing: 0.4px;
-        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 0.3px;
         margin: 0.15rem;
-        font-family: 'Inter', sans-serif;
+        font-family: 'Nunito', sans-serif;
     }
-    .badge-kategorie  { background: #fde8d8; color: #b5501e; }
-    .badge-ernaehrung { background: #d6f0e0; color: #1e7a43; }
-    .badge-saison     { background: #dce9fb; color: #1e4d8c; }
-    .badge-aufwand-leicht { background: #d6f0e0; color: #1e7a43; }
-    .badge-aufwand-mittel { background: #fff3cd; color: #8a6000; }
-    .badge-aufwand-schwer { background: #fde8d8; color: #b5501e; }
+    .badge-kategorie  { background: var(--terra-soft); color: #8B3A1E; }
+    .badge-ernaehrung { background: var(--salbei-soft); color: #3D6B42; }
+    .badge-saison     { background: #DDE8FB; color: #1E4B8C; }
+    .badge-aufwand-leicht { background: var(--salbei-soft); color: #3D6B42; }
+    .badge-aufwand-mittel { background: var(--senf-soft); color: #7A5A00; }
+    .badge-aufwand-schwer { background: var(--terra-soft); color: #8B3A1E; }
 
-    /* ══════════════════════════════════════════════════════
-       FAVORITEN-BADGE (Herz)
-    ══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════
+       FAVORITEN-BADGE (Herz) – warm & rosig
+    ═══════════════════════════════════════════════════════ */
     .fav-badge {
         display: inline-block;
-        background: linear-gradient(135deg, #ff6b9d, #c44569);
+        background: linear-gradient(135deg, #F5A0B0, #E06080);
         color: white;
-        padding: 0.2rem 0.6rem;
+        padding: 0.22rem 0.75rem;
         border-radius: 20px;
         font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 0.4px;
+        font-weight: 800;
+        font-family: 'Nunito', sans-serif;
     }
 
-    /* ══════════════════════════════════════════════════════
-       SECTION LABELS
-    ══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════
+       SECTION LABELS – wie handgeschriebene Rubriken
+    ═══════════════════════════════════════════════════════ */
     .section-label {
-        font-size: 0.72rem;
-        font-weight: 700;
+        font-size: 0.68rem;
+        font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 1.2px;
-        color: #d4845a;
+        letter-spacing: 1.5px;
+        color: var(--terrakotta);
         margin: 1.3rem 0 0.6rem 0;
-        padding-bottom: 0.4rem;
-        border-bottom: 1px solid #f0e8de;
-        font-family: 'Inter', sans-serif;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px dashed var(--sand);
+        font-family: 'Nunito', sans-serif;
     }
 
-    /* ══════════════════════════════════════════════════════
-       ZUTAT GRID – Übersichtliche Darstellung
-    ══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════
+       ZUTAT GRID – organisches Erscheinungsbild
+    ═══════════════════════════════════════════════════════ */
     .zutat-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 0.4rem;
+        grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+        gap: 0.45rem;
         margin-top: 0.5rem;
     }
     .zutat-item {
-        background: #fdf6ec;
-        border: 1px solid #ead8c5;
-        border-radius: 8px;
-        padding: 0.35rem 0.6rem;
+        background: var(--creme);
+        border: 1.5px solid var(--sand);
+        border-radius: 14px;
+        padding: 0.4rem 0.7rem;
         font-size: 0.82rem;
-        color: #2c1a0e;
+        color: var(--kaffee);
         display: flex;
         align-items: center;
-        gap: 0.3rem;
+        gap: 0.35rem;
+        font-family: 'Nunito', sans-serif;
     }
     .zutat-menge {
-        font-weight: 700;
-        color: #d4845a;
+        font-weight: 800;
+        color: var(--terrakotta);
         white-space: nowrap;
     }
-    .zutat-name {
-        color: #4a3020;
-    }
+    .zutat-name { color: var(--kaffee-mid); font-weight: 600; }
 
-    /* ══════════════════════════════════════════════════════
+    /* ═══════════════════════════════════════════════════════
        INTERAKTIVE CHECKLISTE – Koch-Modus
-       Schritte können als „erledigt" markiert werden
-    ══════════════════════════════════════════════════════ */
+    ═══════════════════════════════════════════════════════ */
     .step-done {
-        opacity: 0.45;
+        opacity: 0.4;
         text-decoration: line-through;
-        color: #8c6a4e !important;
+        color: var(--kaffee-mid) !important;
     }
-    .step-active {
-        color: #2c1a0e;
-    }
-    .step-number {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        background: linear-gradient(135deg, #d4845a, #b5501e);
-        color: white;
-        border-radius: 50%;
-        font-size: 0.7rem;
-        font-weight: 700;
-        margin-right: 0.5rem;
-        flex-shrink: 0;
-    }
-    .step-number-done {
-        background: #c8dfc8 !important;
-        color: #1e7a43 !important;
-    }
+    .step-active { color: var(--kaffee); }
 
-    /* ══════════════════════════════════════════════════════
-       GOLD-AKZENT: Koch-Tipps Box
-       Visuelle Hervorhebung mit warmem Gold
-    ══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════
+       TIPP-BOX – goldgelbes Sahnehäubchen
+    ═══════════════════════════════════════════════════════ */
     .tipp-box {
-        background: linear-gradient(135deg, #fffbf0, #fff8e1);
-        border: 1px solid #f0d080;
-        border-left: 4px solid #d4a017;
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
-        margin-top: 1rem;
+        background: var(--senf-soft);
+        border: 1.5px solid #E8C860;
+        border-left: 5px solid var(--senf);
+        border-radius: 16px;
+        padding: 1rem 1.3rem;
+        margin-top: 1.2rem;
     }
     .tipp-box-title {
-        font-family: 'Playfair Display', serif;
-        font-size: 0.9rem;
+        font-family: 'Lora', serif;
+        font-size: 0.88rem;
         font-weight: 700;
-        color: #8a6000;
-        margin: 0 0 0.4rem 0;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        font-style: italic;
+        color: #7A5A00;
+        margin: 0 0 0.35rem 0;
     }
     .tipp-box-text {
-        font-size: 0.88rem;
-        color: #5a4000;
-        line-height: 1.6;
+        font-size: 0.87rem;
+        color: #5A4200;
+        line-height: 1.65;
         margin: 0;
+        font-family: 'Nunito', sans-serif;
     }
 
-    /* ══════════════════════════════════════════════════════
-       PORTIONSRECHNER – Inline UI
-    ══════════════════════════════════════════════════════ */
-    .portions-bar {
-        background: linear-gradient(135deg, #2c1a0e, #4a2c1a);
-        border-radius: 10px;
-        padding: 0.8rem 1.2rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin: 0.8rem 0;
+    /* ═══════════════════════════════════════════════════════
+       MATCH BADGES (Zutaten-Check)
+    ═══════════════════════════════════════════════════════ */
+    .match-badge-full {
+        display: inline-block;
+        background: linear-gradient(135deg, #7A9E7E, #5A8060);
+        color: #fff;
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        font-family: 'Nunito', sans-serif;
     }
-    .portions-label {
-        color: rgba(255,255,255,0.8);
-        font-size: 0.82rem;
-        font-weight: 500;
-        white-space: nowrap;
+    .match-badge-partial {
+        display: inline-block;
+        background: linear-gradient(135deg, #E0A050, #C07830);
+        color: #fff;
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        font-family: 'Nunito', sans-serif;
     }
 
-    /* ══════════════════════════════════════════════════════
-       SIDEBAR
-    ══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════
+       ZUTATEN-TAGS (Matching)
+    ═══════════════════════════════════════════════════════ */
+    .zutat-tag {
+        display: inline-block;
+        background: var(--salbei-soft);
+        color: #3D6B42;
+        border-radius: 12px;
+        padding: 0.2rem 0.6rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin: 0.15rem;
+        font-family: 'Nunito', sans-serif;
+    }
+    .zutat-tag-missing {
+        display: inline-block;
+        background: var(--terra-soft);
+        color: #8B3A1E;
+        border-radius: 12px;
+        padding: 0.2rem 0.6rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin: 0.15rem;
+        font-family: 'Nunito', sans-serif;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       NO-RESULTS ZUSTAND – liebenswert & einladend
+    ═══════════════════════════════════════════════════════ */
+    .no-results {
+        background: var(--weiss);
+        border: 2px dashed var(--sand-mid);
+        border-radius: 28px;
+        padding: 3rem 2rem;
+        text-align: center;
+        margin: 2rem 0;
+    }
+    .no-results h2 {
+        font-family: 'Lora', serif;
+        font-style: italic;
+        color: var(--kaffee-mid);
+        font-size: 1.5rem;
+        margin: 0 0 0.6rem 0;
+    }
+    .no-results p {
+        color: var(--kaffee-mid) !important;
+        font-size: 0.95rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       ZUTATEN-CHECK HEADER
+    ═══════════════════════════════════════════════════════ */
+    .zutat-check-header {
+        background: linear-gradient(135deg, var(--salbei-soft), #C8E8CC);
+        border-radius: 24px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+        border: 1.5px solid #B8D8BC;
+    }
+    .zutat-check-header h2 {
+        font-family: 'Lora', serif;
+        font-style: italic;
+        color: var(--kaffee);
+        margin: 0 0 0.4rem 0;
+        font-size: 1.5rem;
+    }
+    .zutat-check-header p {
+        color: var(--kaffee-mid) !important;
+        font-size: 0.9rem;
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       SIDEBAR – warmes Kaffeebraun
+    ═══════════════════════════════════════════════════════ */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e1008 0%, #2c1a0e 100%) !important;
+        background: linear-gradient(
+            170deg,
+            #2A1508 0%,
+            #3D2314 50%,
+            #4E2E1A 100%
+        ) !important;
     }
     section[data-testid="stSidebar"] .stMarkdown,
     section[data-testid="stSidebar"] label,
     section[data-testid="stSidebar"] .stSlider p,
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span {
-        color: #f5e6d3 !important;
+        color: #F5E6D3 !important;
+        font-family: 'Nunito', sans-serif !important;
     }
-    /* Multiselect-Tags und Dropdown-Texte in der Sidebar */
     section[data-testid="stSidebar"] [data-baseweb="tag"] span,
     section[data-testid="stSidebar"] [data-baseweb="select"] span,
     section[data-testid="stSidebar"] [data-baseweb="select"] div {
-        color: #f5e6d3 !important;
+        color: #F5E6D3 !important;
     }
     section[data-testid="stSidebar"] div[data-baseweb="input"] {
-        background-color: #3d2b1f !important;
-        border-color: #5a3e2e !important;
+        background-color: #5A3A28 !important;
+        border-color: #7A5040 !important;
+        border-radius: 14px !important;
     }
     section[data-testid="stSidebar"] div[data-baseweb="input"] input {
-        color: #f5e6d3 !important;
+        color: #F5E6D3 !important;
     }
     section[data-testid="stSidebar"] h2 {
-        color: #ffd580 !important;
-        font-family: 'Playfair Display', serif !important;
+        color: #FFECD0 !important;
+        font-family: 'Lora', serif !important;
+        font-style: italic !important;
+        font-size: 1.2rem !important;
     }
-    /* Sidebar-Expander (Zutaten-Kategorien): Text muss lesbar bleiben */
+    /* Sidebar-Expander */
     section[data-testid="stSidebar"] .stExpander summary p {
-        color: #f5e6d3 !important;
+        color: #F5E6D3 !important;
     }
     section[data-testid="stSidebar"] .stExpander {
-        background-color: #3d2b1f !important;
-        border-color: #5a3e2e !important;
+        background-color: #5A3A28 !important;
+        border-color: #7A5040 !important;
+        border-radius: 16px !important;
     }
-    section[data-testid="stSidebar"] .stExpander [data-testid="stExpanderDetails"] p,
-    section[data-testid="stSidebar"] .stExpander [data-testid="stExpanderDetails"] span,
-    section[data-testid="stSidebar"] .stExpander [data-testid="stExpanderDetails"] label,
-    section[data-testid="stSidebar"] [data-testid="stCheckbox"] label,
-    section[data-testid="stSidebar"] [data-testid="stCheckbox"] span {
-        color: #f5e6d3 !important;
+    section[data-testid="stSidebar"] .stExpander:hover {
+        transform: none !important;
     }
 
-    /* ══════════════════════════════════════════════════════
-       ZUTATEN-CHECK UI
-    ══════════════════════════════════════════════════════ */
-    .zutat-check-header {
-        background: linear-gradient(135deg, #fdf6ec 0%, #fde8d8 100%);
-        border-radius: 16px;
-        padding: 1.5rem 2rem;
-        margin-bottom: 1.5rem;
-        border: 1px solid #e0d5c8;
+    /* ═══════════════════════════════════════════════════════
+       BUTTONS – rund & warm
+    ═══════════════════════════════════════════════════════ */
+    .stButton > button {
+        border-radius: 20px !important;
+        font-family: 'Nunito', sans-serif !important;
+        font-weight: 700 !important;
+        border: 1.5px solid var(--sand-mid) !important;
+        background: var(--weiss) !important;
+        color: var(--kaffee) !important;
+        transition: all 0.2s ease !important;
+        padding: 0.4rem 1rem !important;
     }
-    .zutat-check-header h2 {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.8rem;
-        color: #2c1a0e;
-        margin: 0 0 0.3rem 0;
-    }
-    .zutat-check-header p {
-        color: #8c6a4e;
-        margin: 0;
-        font-size: 0.92rem;
-        font-family: 'Inter', sans-serif;
-    }
-    .match-badge-full {
-        background: linear-gradient(135deg, #1e7a43, #27ae60);
-        color: white;
-        padding: 0.25rem 0.7rem;
-        border-radius: 20px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .match-badge-partial {
-        background: linear-gradient(135deg, #d4845a, #b5501e);
-        color: white;
-        padding: 0.25rem 0.7rem;
-        border-radius: 20px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .zutat-tag {
-        display: inline-block;
-        background: #fde8d8;
-        color: #b5501e;
-        border-radius: 12px;
-        padding: 0.2rem 0.6rem;
-        font-size: 0.78rem;
-        margin: 0.1rem;
-        font-weight: 600;
-    }
-    .zutat-tag-missing {
-        display: inline-block;
-        background: #f5e6e6;
-        color: #9b3a3a;
-        border-radius: 12px;
-        padding: 0.2rem 0.6rem;
-        font-size: 0.78rem;
-        margin: 0.1rem;
-        font-weight: 600;
-        text-decoration: line-through;
-        opacity: 0.7;
-    }
-    .no-results {
-        text-align: center;
-        padding: 4rem 2rem;
-        color: #8c6a4e;
+    .stButton > button:hover {
+        background: var(--terra-soft) !important;
+        border-color: var(--terrakotta) !important;
+        color: var(--terrakotta) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(200,96,58,0.15) !important;
     }
 
-    /* ══════════════════════════════════════════════════════
-       FAVORITEN-LEISTE
-    ══════════════════════════════════════════════════════ */
-    .fav-bar {
-        background: linear-gradient(135deg, #fff8f0, #ffeedd);
-        border: 1px solid #e8c8a0;
-        border-radius: 12px;
-        padding: 0.8rem 1.2rem;
-        margin-bottom: 1.2rem;
-        font-family: 'Inter', sans-serif;
+    /* ═══════════════════════════════════════════════════════
+       EINGABEFELDER – rund & einladend
+    ═══════════════════════════════════════════════════════ */
+    .stTextInput > div > div > input {
+        border-radius: 16px !important;
+        border: 1.5px solid var(--sand-mid) !important;
+        background: var(--weiss) !important;
+        color: var(--kaffee) !important;
+        font-family: 'Nunito', sans-serif !important;
+        padding: 0.5rem 1rem !important;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: var(--terrakotta) !important;
+        box-shadow: 0 0 0 3px rgba(200,96,58,0.12) !important;
+    }
+    .stTextInput label {
+        font-family: 'Nunito', sans-serif !important;
+        font-weight: 700 !important;
+        color: var(--kaffee-mid) !important;
+        font-size: 0.88rem !important;
     }
 
-    /* ══════════════════════════════════════════════════════
-       DRUCK-MODUS – Optimiert für DIN-A4
-       Alle farbigen Hintergründe werden entfernt,
-       Schriftgrößen angepasst, Sidebar ausgeblendet.
-    ══════════════════════════════════════════════════════ */
+    /* Number Input */
+    .stNumberInput > div > div > input {
+        border-radius: 14px !important;
+        border: 1.5px solid var(--sand-mid) !important;
+        font-family: 'Nunito', sans-serif !important;
+        color: var(--kaffee) !important;
+    }
+
+    /* Slider */
+    .stSlider [data-baseweb="slider"] [data-baseweb="thumb"] {
+        background: var(--terrakotta) !important;
+    }
+    .stSlider [data-baseweb="slider"] [data-baseweb="track-fill"] {
+        background: var(--terrakotta) !important;
+    }
+
+    /* Multiselect */
+    [data-baseweb="tag"] {
+        background: var(--terra-soft) !important;
+        border-radius: 12px !important;
+    }
+    [data-baseweb="tag"] span { color: #8B3A1E !important; }
+
+    /* Progress bar */
+    .stProgress > div > div > div > div {
+        background: linear-gradient(90deg, var(--salbei), #5A8060) !important;
+        border-radius: 8px !important;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       REZEPTE-HEADER (Tab-Inhalte)
+    ═══════════════════════════════════════════════════════ */
+    .rezepte-header {
+        font-family: 'Lora', serif;
+        font-style: italic;
+        color: var(--kaffee);
+        font-size: 1.3rem;
+        margin: 0 0 1rem 0;
+        padding: 0.6rem 0;
+        border-bottom: 2px dashed var(--sand-mid);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       DRUCK-MODUS
+    ═══════════════════════════════════════════════════════ */
     @media print {
         section[data-testid="stSidebar"],
         .stButton,
-        [data-testid="stToolbar"],
-        [data-testid="stHeader"],
-        .stTabs [role="tablist"],
-        footer { display: none !important; }
-
-        .stApp, html, body {
-            background: white !important;
-            color: black !important;
-        }
-        .hero-header {
-            background: #2c1a0e !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
+        [data-testid="stNumberInput"],
+        .stTabs [data-baseweb="tab-list"] { display: none !important; }
+        .stApp { background: white !important; }
         .stExpander {
-            box-shadow: none !important;
             border: 1px solid #ccc !important;
+            box-shadow: none !important;
+            break-inside: avoid;
             page-break-inside: avoid;
         }
-        .section-label { color: #555 !important; }
-        .badge { border: 1px solid #ccc !important; }
-        [data-testid="stMetricValue"],
-        [data-testid="stMetricLabel"] { color: black !important; }
-        .zutat-item { background: #f9f9f9 !important; }
-        .tipp-box { background: #fffde7 !important; -webkit-print-color-adjust: exact; }
-
-        /* DIN-A4 Seitenränder */
-        @page {
-            size: A4 portrait;
-            margin: 18mm 15mm 18mm 15mm;
-        }
+        .hero-header { break-after: avoid; }
     }
 
     footer { visibility: hidden; }
+    #MainMenu { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# GOOGLE SHEETS CONNECTION
-# Caching mit ttl=300s → kein unnötiger API-Abruf bei jedem Rerun
+# GOOGLE SHEETS CONNECTION (unverändert)
 # ══════════════════════════════════════════════════════════════════════════════
 @st.cache_data(ttl=300)
 def load_data() -> pd.DataFrame:
@@ -572,56 +689,40 @@ def load_data() -> pd.DataFrame:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PORTIONSRECHNER – PRO-FEATURE
-# Nutzt Regex, um Zahlen/Mengen in Zutatstrings zu erkennen und zu skalieren.
-# Unterstützt: "200g", "2 EL", "1/2 TL", "3-4", Dezimalzahlen
+# PORTIONSRECHNER (unverändert)
 # ══════════════════════════════════════════════════════════════════════════════
 def skaliere_zutat(zutat_str: str, faktor: float) -> str:
-    """
-    Multipliziert alle Zahlen in einem Zutaten-String mit dem Faktor.
-    Beispiel: "200g Mehl" × 1.5 → "300g Mehl"
-    Beispiel: "1/2 TL Salz" × 2 → "1.0 TL Salz"
-    """
+    """Multipliziert alle Zahlen in einem Zutaten-String mit dem Faktor."""
     def ersetze_zahl(match):
         original = match.group(0)
-        # Brüche auflösen (1/2 → 0.5)
         if "/" in original:
             teile = original.split("/")
             try:
                 wert = float(teile[0]) / float(teile[1])
-            except:
+            except Exception:
                 return original
-        # Bereich (3-4) → nimm erstes
         elif "-" in original and not original.startswith("-"):
             try:
                 wert = float(original.split("-")[0])
-            except:
+            except Exception:
                 return original
         else:
             try:
                 wert = float(original.replace(",", "."))
-            except:
+            except Exception:
                 return original
 
         neuer_wert = wert * faktor
-        # Schöne Ausgabe: ganze Zahlen ohne Dezimalstellen
         if neuer_wert == int(neuer_wert):
             return str(int(neuer_wert))
         else:
             return f"{neuer_wert:.1f}".replace(".", ",")
 
-    # Regex: Brüche, Bereiche, Dezimalzahlen, ganze Zahlen
     return re.sub(r"\d+/\d+|\d+-\d+|\d+[,\.]\d+|\d+", ersetze_zahl, zutat_str)
 
 
 def parse_zutat_display(zutat_str: str) -> tuple[str, str]:
-    """
-    Trennt Menge+Einheit vom Zutatsnamen für das Grid-Display.
-    Gibt (menge_str, name_str) zurück.
-    Beispiel: "200g Parmesan" → ("200g", "Parmesan")
-    Beispiel: "2 EL Olivenöl" → ("2 EL", "Olivenöl")
-    Beispiel: "Parmesan" → ("", "Parmesan")
-    """
+    """Trennt Menge+Einheit vom Zutatsnamen."""
     EINHEITEN = r"(?:g|kg|ml|l|EL|TL|Prise|Stück|Stk|Scheib\w*|Dose\w*|Bund|Pkg|Pckg|cm|mm|Glas|Dose|Becher|Tasse|Pck)\b"
     pattern = rf"^(\d+[,\./]?\d*\s*(?:{EINHEITEN})?)\s*(.+)$"
     match = re.match(pattern, zutat_str.strip(), re.IGNORECASE)
@@ -631,31 +732,16 @@ def parse_zutat_display(zutat_str: str) -> tuple[str, str]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SCHRITT-PARSER – Zubereitung in einzelne Schritte aufteilen
-# Unterstützt zwei Formate aus Google Sheets:
-#   A) Zeilenumbrüche: "Schritt 1\nSchritt 2\n..."
-#   B) Nummerierte Liste in einer Zeile: "1. Zwiebeln... 2. Öl... 3. ..."
+# SCHRITT-PARSER (unverändert)
 # ══════════════════════════════════════════════════════════════════════════════
 def parse_zubereitung_steps(zubereitung_str: str) -> list[str]:
-    """
-    Gibt eine Liste der einzelnen Zubereitungsschritte zurück.
-    Erkennungslogik:
-    1. Erst per Zeilenumbruch splitten (Format A).
-    2. Falls nur 1 Zeile → versuche nummerierte Schritte via Regex zu finden (Format B).
-       Muster: "1. Text 2. Text" oder "1) Text 2) Text"
-    """
-    # Format A: Zeilenumbrüche
+    """Gibt eine Liste der einzelnen Zubereitungsschritte zurück."""
     by_newline = [s.strip() for s in str(zubereitung_str).split("\n") if s.strip()]
     if len(by_newline) > 1:
         return by_newline
 
-    # Format B: Nummerierung in einem langen String
-    # Regex: Trenne an "Ziffer. " oder "Ziffer) " am Anfang eines Schritts
     text = str(zubereitung_str).strip()
-    # Splitpunkte finden: "2. ", "3. " usw. (aber NICHT "z. B." = Kleinbuchstabe)
     parts = re.split(r'(?<!\w)(\d+[\.\)]\s+)', text)
-    # parts sieht aus wie: ['', '1. ', 'Schritt eins ', '2. ', 'Schritt zwei']
-    # Zusammenbauen: Nummer + Text wieder verbinden
     steps = []
     i = 1
     while i < len(parts) - 1:
@@ -668,23 +754,96 @@ def parse_zubereitung_steps(zubereitung_str: str) -> list[str]:
     if len(steps) > 1:
         return steps
 
-    # Fallback: gesamter Text als ein Schritt
     return [text] if text else []
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PLURAL/SINGULAR MATCHING – PRO-FEATURE
-# Verbesserte Matching-Logik: "Tomate" matcht auch "Tomaten" und umgekehrt.
-# Funktioniert für häufige deutsche Pluralformen (en, e, er, s)
+# INTELLIGENTE ZUTATEN-NORMALISIERUNG (NEU / VERBESSERT)
+#
+# Der "Zutaten-Cleaner" entfernt via Regex alle Mengenangaben, Einheiten,
+# Bruchteile und Klammerzusätze, bevor eine Zutat verglichen wird.
+# Damit wird "1 Limette" == "Limetten (1-2 Stück)" == "Limette".
 # ══════════════════════════════════════════════════════════════════════════════
+
+# Regex-Muster für Mengen und Einheiten (erweiterbar)
+_MENGE_EINHEIT_PATTERN = re.compile(
+    r"""
+    # Bruchzeichen (Unicode): ½ ¼ ¾ etc.
+    [½¼¾⅓⅔⅛⅜⅝⅞]
+    |
+    # Zahlen mit Bruchstrich: 1/2, 3/4
+    \d+\s*/\s*\d+
+    |
+    # Zahlenbereiche: 1-2, 3–4
+    \d+\s*[-–]\s*\d+
+    |
+    # Dezimalzahlen: 1,5 oder 1.5
+    \d+[,\.]\d+
+    |
+    # Ganze Zahlen
+    \d+
+    |
+    # Einheiten (Groß-/Kleinschreibung egal)
+    \b(?:
+        g|kg|mg|
+        ml|l|cl|dl|
+        EL|TL|El|Tl|
+        Prise|prise|
+        Stück|Stk|stk|stück|
+        Scheibe[n]?|scheibe[n]?|
+        Dose[n]?|dose[n]?|
+        Bund|bund|
+        Pkg|Pckg|pkg|Pck|pck|
+        Paket[e]?|paket[e]?|
+        Becher|becher|
+        Tasse[n]?|tasse[n]?|
+        Glas|Gläser|glas|
+        cm|mm|
+        Zehe[n]?|zehe[n]?|
+        Handvoll|handvoll|
+        Spritzer|spritzer|
+        Zweig[e]?|zweig[e]?|
+        Blatt|Blätter|blatt|
+        Wurst|wurst|
+        Scheib\w*
+    )\b
+    |
+    # Klammerzusätze: (1-2 Stück), (frisch gepresst), (ca. 200g)
+    \([^)]*\)
+    |
+    # Einleitende Wörter: "ca.", "etwa", "mind."
+    \b(?:ca|etwa|mind|max|ungefähr|je)\b\.?
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def bereinige_zutat(zutat_str: str) -> str:
+    """
+    Entfernt alle Mengen-, Einheits- und Klammerzusätze aus einem Zutatsnamen.
+    Gibt den normalisierten Wortstamm zurück.
+
+    Beispiele:
+        "1 Limette"           → "Limette"
+        "Limetten (1-2 Stück)"→ "Limetten"
+        "200g Parmesan"       → "Parmesan"
+        "½ TL Salz"          → "Salz"
+        "2 EL Olivenöl"       → "Olivenöl"
+        "ca. 3 Zehen Knoblauch" → "Knoblauch"
+    """
+    bereinigt = _MENGE_EINHEIT_PATTERN.sub(" ", zutat_str)
+    # Mehrfach-Leerzeichen, Kommas und Satzzeichen am Rand entfernen
+    bereinigt = re.sub(r"[,;:\-–\.]+", " ", bereinigt)
+    bereinigt = re.sub(r"\s+", " ", bereinigt).strip()
+    return bereinigt.lower()
+
+
 def normalisiere_wort(wort: str) -> str:
     """
     Reduziert ein deutsches Wort auf seinen wahrscheinlichen Wortstamm,
     indem gängige Pluralendungen entfernt werden.
-    Tomate → tomat | Tomaten → tomat | Kartoffel → kartoffel | Kartoffeln → kartoffel
     """
     w = wort.lower().strip()
-    # Reihenfolge ist wichtig: längste Endung zuerst prüfen
     for endung in ["nen", "ien", "ern", "chen", "lein", "en", "er", "es", "e", "s"]:
         if w.endswith(endung) and len(w) - len(endung) >= 3:
             return w[:-len(endung)]
@@ -693,27 +852,34 @@ def normalisiere_wort(wort: str) -> str:
 
 def zutaten_match(rezept_zutat: str, vorhandene_lower: set) -> bool:
     """
-    Mehrstufige Matching-Strategie:
-    1. Direkte Teilstring-Übereinstimmung (wie bisher)
-    2. Stamm-basierter Vergleich (Singular/Plural)
+    Mehrstufige Matching-Strategie mit intelligenter Normalisierung:
+    1. Beide Seiten werden durch den Zutaten-Cleaner bereinigt
+       (Mengen, Einheiten, Klammern entfernt)
+    2. Direkter Teilstring-Vergleich der bereinigten Strings
+    3. Stamm-basierter Vergleich (Singular/Plural)
     """
-    rz_lower = rezept_zutat.lower()
-    rz_stamm = normalisiere_wort(rz_lower)
+    rz_clean = bereinige_zutat(rezept_zutat)
+    rz_stamm = normalisiere_wort(rz_clean)
 
     for v in vorhandene_lower:
-        v_stamm = normalisiere_wort(v)
-        # Direktes Matching (original)
-        if v in rz_lower or rz_lower in v:
-            return True
-        # Stamm-Matching (NEU)
-        if len(rz_stamm) >= 4 and len(v_stamm) >= 4:
+        v_clean = bereinige_zutat(v)
+        v_stamm = normalisiere_wort(v_clean)
+
+        # Direktes Matching (bereinigt)
+        if v_clean and rz_clean:
+            if v_clean in rz_clean or rz_clean in v_clean:
+                return True
+
+        # Stamm-Matching (Singular/Plural)
+        if len(rz_stamm) >= 3 and len(v_stamm) >= 3:
             if rz_stamm in v_stamm or v_stamm in rz_stamm:
                 return True
+
     return False
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# GEWÜRZE & KATEGORIEN (unverändert aus Original)
+# GEWÜRZE & KATEGORIEN (unverändert)
 # ══════════════════════════════════════════════════════════════════════════════
 GEWUERZE_KEYWORDS = {
     "salz", "pfeffer", "zucker", "öl", "olivenöl", "butter", "essig",
@@ -798,25 +964,45 @@ def kategorisiere_zutat(zutat: str) -> str:
 
 
 def extrahiere_alle_zutaten(df: pd.DataFrame) -> dict:
-    alle_zutaten = set()
+    """
+    Extrahiert alle Zutaten aus dem DataFrame und kategorisiert sie.
+    Nutzt den Zutaten-Cleaner, um normalisierte Zutaten-Namen zu erhalten,
+    und gruppiert Duplikate (z.B. "1 Limette" und "Limetten") zusammen.
+    """
+    zutaten_map: dict[str, str] = {}  # normalisiert → Original-Anzeigename
+
     for zutaten_str in df["Benötigte Zutaten"].dropna():
         items = [z.strip() for z in str(zutaten_str).replace("\n", ",").split(",") if z.strip()]
         for item in items:
-            if not ist_gewuerz(item) and len(item) > 2:
-                alle_zutaten.add(item)
-    kategorisiert = {}
-    for zutat in sorted(alle_zutaten):
-        kat = kategorisiere_zutat(zutat)
+            if ist_gewuerz(item) or len(item) <= 2:
+                continue
+            clean = bereinige_zutat(item)
+            stamm = normalisiere_wort(clean)
+            if len(clean) < 2:
+                continue
+            # Verwende den kürzesten / saubersten Namen als Anzeigenamen
+            if stamm not in zutaten_map:
+                # Wähle den bereinigten (ohne Mengen) Original-Text als Label
+                # Kapitalisierung: ersten Buchstaben groß
+                anzeige = clean.strip().capitalize()
+                zutaten_map[stamm] = anzeige
+
+    # Kategorisiere nach Anzeigenamen
+    kategorisiert: dict[str, list[str]] = {}
+    for stamm, anzeige in sorted(zutaten_map.items(), key=lambda x: x[1]):
+        kat = kategorisiere_zutat(anzeige)
         if kat not in kategorisiert:
             kategorisiert[kat] = []
-        kategorisiert[kat].append(zutat)
+        if anzeige not in kategorisiert[kat]:
+            kategorisiert[kat].append(anzeige)
+
     return kategorisiert
 
 
 def berechne_matches(df: pd.DataFrame, vorhandene_zutaten: set) -> pd.DataFrame:
     """
-    Verbesserte Matching-Logik mit Singular/Plural-Erkennung.
-    Nutzt die neue zutaten_match()-Funktion statt simplem Teilstring-Check.
+    Verbesserte Matching-Logik mit intelligenter Normalisierung.
+    Nutzt bereinige_zutat() für Mengen-unabhängigen Vergleich.
     """
     if not vorhandene_zutaten:
         return pd.DataFrame()
@@ -844,19 +1030,19 @@ def berechne_matches(df: pd.DataFrame, vorhandene_zutaten: set) -> pd.DataFrame:
             else:
                 fehlend.append(zutat)
 
-        anzahl_gesamt = len(rezept_zutaten)
+        anzahl_gesamt    = len(rezept_zutaten)
         anzahl_vorhanden = len(vorhanden)
         anteil = anzahl_vorhanden / anzahl_gesamt if anzahl_gesamt > 0 else 0
 
         if anzahl_vorhanden > 0:
             ergebnisse.append({
-                "row": row,
-                "vorhanden": vorhanden,
-                "fehlend": fehlend,
-                "anzahl_gesamt": anzahl_gesamt,
+                "row":              row,
+                "vorhanden":        vorhanden,
+                "fehlend":          fehlend,
+                "anzahl_gesamt":    anzahl_gesamt,
                 "anzahl_vorhanden": anzahl_vorhanden,
-                "anteil": anteil,
-                "vollstaendig": len(fehlend) == 0,
+                "anteil":           anteil,
+                "vollstaendig":     len(fehlend) == 0,
             })
 
     if not ergebnisse:
@@ -871,11 +1057,9 @@ def berechne_matches(df: pd.DataFrame, vorhandene_zutaten: set) -> pd.DataFrame:
 # SESSION STATE INITIALISIERUNG
 # ══════════════════════════════════════════════════════════════════════════════
 if "favoriten" not in st.session_state:
-    # Set mit den Namen der favorisierten Rezepte
     st.session_state.favoriten = set()
 
 if "completed_steps" not in st.session_state:
-    # Dict: {rezept_name: set(step_indices)} – markierte Kochschritte
     st.session_state.completed_steps = {}
 
 if "selected_zutaten" not in st.session_state:
@@ -900,15 +1084,7 @@ def toggle_favorit(name: str):
 
 def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
     """
-    Zentrale Funktion zum Rendern einer Rezeptkarte.
-    Wird in Tab 1 und Tab 2 wiederverwendet.
-
-    NEU:
-    - Favoriten-Button (❤️/🤍) mit Session State
-    - Portionsrechner (Regex-basiert)
-    - Interaktive Schritt-Checkliste
-    - Koch-Tipps Box (gold)
-    - Zutat-Grid
+    Zentrale Funktion zum Rendern einer Rezeptkarte im Kochbuch-Stil.
     """
     name        = row.get("Name des Gerichts", "Unbekannt")
     zeit        = row.get("Benötigte Zeit", 0)
@@ -922,10 +1098,10 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
     tipps       = row.get("Koch-Tipps", "") if "Koch-Tipps" in row.index else ""
 
     ist_favorit = name in st.session_state.favoriten
-    fav_icon = "❤️" if ist_favorit else "🤍"
-    fav_badge = '<span class="fav-badge">❤️ Favorit</span> ' if ist_favorit else ""
+    fav_icon    = "❤️" if ist_favorit else "🤍"
+    fav_badge   = '<span class="fav-badge">❤️ Favorit</span> ' if ist_favorit else ""
 
-    # Badges
+    # Badges zusammenbauen
     badges = fav_badge
     if kategorie:
         badges += f'<span class="badge badge-kategorie">{kategorie}</span>'
@@ -936,7 +1112,7 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
     if aufwand:
         badges += f'<span class="badge {aufwand_class(aufwand)}">{aufwand}</span>'
 
-    expander_label = f"{'❤️ ' if ist_favorit else '🍽️ '}{name}  •  ⏱️ {zeit} min"
+    expander_label = f"{'❤️ ' if ist_favorit else '🥘 '}{name}  ·  ⏱ {zeit} min"
 
     with st.expander(expander_label, expanded=False):
         st.markdown(badges, unsafe_allow_html=True)
@@ -949,15 +1125,14 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
                 f"{fav_icon} {'Entfernen' if ist_favorit else 'Favorit'}",
                 key=f"fav_{idx_key}_{name}",
                 use_container_width=True,
-                help="Rezept zu Favoriten hinzufügen / entfernen"
+                help="Rezept zu Favoriten hinzufügen / entfernen",
             ):
                 toggle_favorit(name)
                 st.rerun()
 
         st.markdown("---")
 
-        # ── Portionsrechner (PRO-FEATURE) ─────────────────────────────────
-        # Standard-Portionen: 4 (kann im Sheet definiert sein)
+        # ── Portionsrechner ───────────────────────────────────────────────
         base_portionen = int(row.get("Portionen", 4)) if "Portionen" in row.index else 4
         if base_portionen == 0:
             base_portionen = 4
@@ -967,42 +1142,31 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
             with port_col1:
                 neue_portionen = st.number_input(
                     "🍽️ Portionen",
-                    min_value=1,
-                    max_value=20,
-                    value=base_portionen,
-                    step=1,
+                    min_value=1, max_value=20, value=base_portionen, step=1,
                     key=f"portionen_{idx_key}_{name}",
-                    help=f"Originalrezept für {base_portionen} Portionen. Zutatenmengen werden automatisch umgerechnet."
+                    help=f"Originalrezept für {base_portionen} Portionen.",
                 )
             faktor = neue_portionen / base_portionen
             with port_col2:
                 if faktor != 1.0:
                     st.info(
-                        f"Faktor: ×{faktor:.2f} — Mengen werden auf **{neue_portionen} Portionen** umgerechnet",
-                        icon="🔢"
+                        f"Faktor: ×{faktor:.2f} – Mengen auf **{neue_portionen} Portionen** umgerechnet",
+                        icon="🔢",
                     )
         else:
             faktor = 1.0
-            neue_portionen = base_portionen
 
-        # ── Layout: Links Zutaten, Rechts Zubereitung ─────────────────────
+        # ── Layout: Zutaten | Zubereitung ─────────────────────────────────
         col_l, col_r = st.columns([1, 2])
 
         with col_l:
-            # ── ZUTATEN-GRID ──────────────────────────────────────────────
             st.markdown('<div class="section-label">🧂 Zutaten</div>', unsafe_allow_html=True)
 
             if zutaten:
                 items = [z.strip() for z in str(zutaten).replace("\n", ",").split(",") if z.strip()]
-
                 grid_html = '<div class="zutat-grid">'
                 for item in items:
-                    # Portionsrechner: Mengen skalieren
-                    if faktor != 1.0:
-                        item_skaliert = skaliere_zutat(item, faktor)
-                    else:
-                        item_skaliert = item
-
+                    item_skaliert = skaliere_zutat(item, faktor) if faktor != 1.0 else item
                     menge, zutat_name = parse_zutat_display(item_skaliert)
                     if menge:
                         grid_html += (
@@ -1018,7 +1182,6 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
             else:
                 st.markdown("_Keine Zutaten angegeben_")
 
-            # ── Equipment ─────────────────────────────────────────────────
             if equipment:
                 st.markdown('<div class="section-label">🔧 Equipment</div>', unsafe_allow_html=True)
                 eq_items = [e.strip() for e in str(equipment).replace("\n", ",").split(",") if e.strip()]
@@ -1026,16 +1189,12 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
                     st.markdown(f"• {eq}")
 
         with col_r:
-            # ── INTERAKTIVE SCHRITT-CHECKLISTE (PRO-FEATURE) ──────────────
             st.markdown('<div class="section-label">👨‍🍳 Zubereitung</div>', unsafe_allow_html=True)
 
             if zubereitung:
-                # parse_zubereitung_steps erkennt sowohl Zeilenumbrüche
-                # als auch nummerierte Schritte in einem einzigen String
                 steps = parse_zubereitung_steps(zubereitung)
 
                 if len(steps) > 1:
-                    # Initialisiere Fortschritts-Set für dieses Rezept
                     key = f"steps_{name}"
                     if key not in st.session_state.completed_steps:
                         st.session_state.completed_steps[key] = set()
@@ -1044,16 +1203,13 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
                     fertig = len(done_steps)
                     gesamt = len(steps)
 
-                    # Fortschrittsanzeige
                     if fertig > 0:
-                        st.progress(fertig / gesamt, text=f"{fertig}/{gesamt} Schritte erledigt")
+                        st.progress(fertig / gesamt, text=f"{fertig}/{gesamt} Schritte erledigt ✓")
 
-                    # Schritte als Checkboxen – jeder Schritt in eigener Zeile
                     for i, step in enumerate(steps):
                         is_done = i in done_steps
                         checked = st.checkbox(
-                            step,
-                            value=is_done,
+                            step, value=is_done,
                             key=f"step_{idx_key}_{name}_{i}",
                         )
                         if checked:
@@ -1061,19 +1217,17 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
                         else:
                             st.session_state.completed_steps[key].discard(i)
 
-                    # Alle zurücksetzen
                     if done_steps:
                         if st.button("🔄 Fortschritt zurücksetzen", key=f"reset_{idx_key}_{name}"):
                             st.session_state.completed_steps[key] = set()
                             st.rerun()
                 else:
-                    # Einzelner Text-Block: trotzdem per Nummerierung splitten versuchen
                     for step in steps:
                         st.markdown(step)
             else:
                 st.markdown("_Keine Zubereitung angegeben_")
 
-        # ── KOCH-TIPPS (PRO-FEATURE – Gold-Akzent) ────────────────────────
+        # ── Koch-Tipps (goldene Tipp-Box) ─────────────────────────────────
         if tipps and tipps.strip():
             st.markdown(f"""
             <div class="tipp-box">
@@ -1086,7 +1240,7 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
 # ══════════════════════════════════════════════════════════════════════════════
 # DATEN LADEN
 # ══════════════════════════════════════════════════════════════════════════════
-with st.spinner("Rezepte werden geladen …"):
+with st.spinner("🥘 Rezepte werden aus dem Kochbuch geholt …"):
     try:
         df = load_data()
     except Exception as e:
@@ -1094,21 +1248,21 @@ with st.spinner("Rezepte werden geladen …"):
         st.stop()
 
 if df.empty:
-    st.warning("Das Google Sheet enthält keine Daten.")
+    st.warning("Das Google Sheet enthält noch keine Rezepte.")
     st.stop()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# HERO HEADER (NEU)
+# HERO HEADER
 # ══════════════════════════════════════════════════════════════════════════════
 avg_zeit = int(df["Benötigte Zeit"].mean()) if not df.empty else 0
 n_rezepte = len(df)
-n_fav = len(st.session_state.favoriten)
+n_fav     = len(st.session_state.favoriten)
 
 st.markdown(f"""
 <div class="hero-header">
-    <h1 class="hero-title">🍽️ Rezept-Dashboard</h1>
-    <p class="hero-subtitle">Deine persönliche Rezeptsammlung — durchsuche, filtere und entdecke neue Lieblinge.</p>
+    <h1 class="hero-title">🥘 Mein Kochbuch</h1>
+    <p class="hero-subtitle">Deine persönliche Rezeptsammlung — mit Liebe zusammengetragen.</p>
     <div class="hero-stats">
         <div class="hero-stat">
             <span class="hero-stat-number">{n_rezepte}</span>
@@ -1130,7 +1284,7 @@ st.markdown(f"""
 # ══════════════════════════════════════════════════════════════════════════════
 # TABS
 # ══════════════════════════════════════════════════════════════════════════════
-tab1, tab2, tab3 = st.tabs(["🍽️ Alle Rezepte", "❤️ Favoriten", "🛒 Zutaten-Check"])
+tab1, tab2, tab3 = st.tabs(["🥘 Alle Rezepte", "❤️ Favoriten", "🛒 Zutaten-Check"])
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1138,9 +1292,8 @@ tab1, tab2, tab3 = st.tabs(["🍽️ Alle Rezepte", "❤️ Favoriten", "🛒 Zu
 # ════════════════════════════════════════════════════════════════════════════
 with tab1:
 
-    # ── Sidebar Filter ────────────────────────────────────────────────────
     with st.sidebar:
-        st.markdown("## 🔍 Filter")
+        st.markdown("## 🔍 Filtern")
         st.markdown("---")
 
         search_term = st.text_input("Suche nach Gericht", placeholder="z. B. Pasta, Suppe …")
@@ -1153,10 +1306,8 @@ with tab1:
 
         zeit_range = st.slider(
             "⏱️ Benötigte Zeit (Min.)",
-            min_value=min_zeit,
-            max_value=max_zeit,
-            value=(min_zeit, max_zeit),
-            step=5,
+            min_value=min_zeit, max_value=max_zeit,
+            value=(min_zeit, max_zeit), step=5,
         )
         st.markdown("---")
 
@@ -1165,38 +1316,33 @@ with tab1:
             options = [o for o in options if o]
             return st.multiselect(f"{emoji} {label}", options=options)
 
-        sel_kategorie  = ms_filter("Kategorie",      "Kategorie",      "🍴")
-        sel_ernaehrung = ms_filter("Ernährungsform",  "Ernährungsform", "🌿")
-        sel_saison     = ms_filter("Saison-Check",    "Saison-Check",   "🌸")
-        sel_aufwand    = ms_filter("Aufwand",         "Aufwand",        "⚡")
+        sel_kategorie  = ms_filter("Kategorie",     "Kategorie",     "🍴")
+        sel_ernaehrung = ms_filter("Ernährungsform", "Ernährungsform","🌿")
+        sel_saison     = ms_filter("Saison-Check",   "Saison-Check",  "🌸")
+        sel_aufwand    = ms_filter("Aufwand",         "Aufwand",       "⚡")
 
         st.markdown("---")
-
-        # Druck-Hinweis
         st.markdown("""
-        <div style="color:#f5e6d3; font-size:0.8rem; opacity:0.7; margin-top:0.5rem;">
+        <div style="color:#F5E6D3; font-size:0.8rem; opacity:0.75; line-height:1.6;">
         🖨️ <strong>Druck-Tipp:</strong><br>
-        Strg+P (Cmd+P) öffnet den Browser-Druckdialog. Das Layout ist für DIN-A4 optimiert.
+        Strg+P öffnet den Druckdialog.<br>
+        Layout ist für DIN-A4 optimiert.
         </div>
         """, unsafe_allow_html=True)
-
         st.markdown("---")
         if st.button("🔄 Filter zurücksetzen", use_container_width=True):
             st.rerun()
 
     # ── Filterlogik ───────────────────────────────────────────────────────
     filtered = df.copy()
-
     if search_term:
         filtered = filtered[
             filtered["Name des Gerichts"].str.contains(search_term, case=False, na=False)
         ]
-
     filtered = filtered[
         (filtered["Benötigte Zeit"] >= zeit_range[0]) &
         (filtered["Benötigte Zeit"] <= zeit_range[1])
     ]
-
     if sel_kategorie:
         filtered = filtered[filtered["Kategorie"].isin(sel_kategorie)]
     if sel_ernaehrung:
@@ -1209,7 +1355,7 @@ with tab1:
     # ── Metriken ──────────────────────────────────────────────────────────
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("🍽️ Rezepte", len(filtered))
+        st.metric("🥘 Rezepte", len(filtered))
     with col2:
         avg_t = int(filtered["Benötigte Zeit"].mean()) if not filtered.empty else 0
         st.metric("⏱️ Ø Zeit", f"{avg_t} min")
@@ -1218,42 +1364,49 @@ with tab1:
     with col4:
         st.metric("🌿 Ernährungsformen", filtered["Ernährungsform"].nunique())
 
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Rezepte anzeigen ──────────────────────────────────────────────────
     if filtered.empty:
         st.markdown("""
         <div class="no-results">
-            <h2>Keine Rezepte gefunden 🥺</h2>
-            <p>Passe deine Filter an, um Ergebnisse zu sehen.</p>
+            <h2>Nichts gefunden 🥺</h2>
+            <p>Passe deine Filter an — es warten noch viele Rezepte auf dich!</p>
         </div>
         """, unsafe_allow_html=True)
     else:
-        st.markdown(f"### {len(filtered)} Rezept{'e' if len(filtered) != 1 else ''} gefunden")
-        st.markdown("")
-
+        st.markdown(
+            f'<p class="rezepte-header">✨ {len(filtered)} Rezept{"e" if len(filtered) != 1 else ""} gefunden</p>',
+            unsafe_allow_html=True,
+        )
         for idx, (_, row) in enumerate(filtered.iterrows()):
             rendere_rezept_karte(row, idx_key=f"tab1_{idx}")
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# TAB 2 – FAVORITEN (NEU)
+# TAB 2 – FAVORITEN
 # ════════════════════════════════════════════════════════════════════════════
 with tab2:
     st.markdown("""
-    <div class="zutat-check-header">
-        <h2>❤️ Meine Favoriten</h2>
-        <p>Hier erscheinen alle Rezepte, die du mit dem Herz-Button markiert hast – nur für diese Sitzung gespeichert.</p>
+    <div class="zutat-check-header" style="background: linear-gradient(135deg,#FFEAE8,#FFCDD0); border-color:#FFAAB0;">
+        <h2>❤️ Meine Lieblingsrezepte</h2>
+        <p>Alle mit dem Herz markierten Rezepte – für diese Sitzung gespeichert.</p>
     </div>
     """, unsafe_allow_html=True)
 
     if not st.session_state.favoriten:
-        st.info("Du hast noch keine Favoriten gespeichert. Öffne ein Rezept in Tab 1 und klicke auf 🤍 Favorit.")
+        st.markdown("""
+        <div class="no-results">
+            <h2>Noch keine Favoriten 🤍</h2>
+            <p>Öffne ein Rezept in „Alle Rezepte" und klicke auf 🤍 Favorit.</p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         fav_df = df[df["Name des Gerichts"].isin(st.session_state.favoriten)]
-        st.markdown(f"**{len(fav_df)} gespeicherte{'s' if len(fav_df)==1 else ''} Rezept{'e' if len(fav_df)!=1 else ''}**")
-        st.markdown("")
-
+        st.markdown(
+            f'<p class="rezepte-header">❤️ {len(fav_df)} gespeicherte{"s" if len(fav_df)==1 else ""} Rezept{"e" if len(fav_df)!=1 else ""}</p>',
+            unsafe_allow_html=True,
+        )
         for idx, (_, row) in enumerate(fav_df.iterrows()):
             rendere_rezept_karte(row, idx_key=f"tab2_{idx}")
 
@@ -1269,23 +1422,25 @@ with tab2:
 with tab3:
     st.markdown("""
     <div class="zutat-check-header">
-        <h2>🛒 Was habe ich im Kühlschrank?</h2>
-        <p>Wähle deine vorhandenen Zutaten aus – das Dashboard zeigt dir, welche Rezepte du kochen kannst.
-        Gewürze und Grundzutaten werden automatisch ignoriert. Singular/Plural wird automatisch erkannt (Tomate = Tomaten).</p>
+        <h2>🛒 Was hab ich im Kühlschrank?</h2>
+        <p>
+            Wähle deine vorhandenen Zutaten – das Kochbuch zeigt dir, was du kochen kannst.<br>
+            <strong>Mengenangaben werden automatisch ignoriert:</strong> „1 Limette" und „Limetten (2 Stück)" werden als dieselbe Zutat erkannt.
+            Gewürze und Grundzutaten werden ausgeblendet.
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
     alle_zutaten_kategorisiert = extrahiere_alle_zutaten(df)
 
-    # ── Zutaten-Auswahl ───────────────────────────────────────────────────
-    st.markdown("### 🧺 Meine Zutaten auswählen")
+    st.markdown('<p class="rezepte-header">🧺 Meine Zutaten auswählen</p>', unsafe_allow_html=True)
 
     col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1, 1])
     with col_ctrl1:
         zutat_suche = st.text_input(
             "🔍 Zutat suchen",
             placeholder="z. B. Lachs, Tomate …",
-            key="zutat_suche"
+            key="zutat_suche",
         )
     with col_ctrl2:
         st.markdown("<br>", unsafe_allow_html=True)
@@ -1346,14 +1501,19 @@ with tab3:
         st.markdown(
             f"**Ausgewählte Zutaten ({len(vorhandene_zutaten)}):** " +
             " ".join([f'<span class="zutat-tag">{z}</span>' for z in sorted(vorhandene_zutaten)]),
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
         st.markdown("")
 
-    st.markdown("### 🍳 Passende Rezepte")
+    st.markdown('<p class="rezepte-header">🍳 Passende Rezepte</p>', unsafe_allow_html=True)
 
     if not vorhandene_zutaten:
-        st.info("👆 Wähle oben deine vorhandenen Zutaten aus, um passende Rezepte zu sehen.")
+        st.markdown("""
+        <div class="no-results">
+            <h2>Wähle deine Zutaten oben aus 👆</h2>
+            <p>Das Kochbuch sucht dann passende Rezepte für dich.</p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         matches = berechne_matches(df, vorhandene_zutaten)
 
@@ -1361,7 +1521,7 @@ with tab3:
             st.markdown("""
             <div class="no-results">
                 <h2>Keine passenden Rezepte 🥺</h2>
-                <p>Mit den ausgewählten Zutaten können leider keine Rezepte gekocht werden. Füge mehr Zutaten hinzu!</p>
+                <p>Mit diesen Zutaten geht leider noch nichts. Füge mehr hinzu!</p>
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -1374,26 +1534,28 @@ with tab3:
             with mc2:
                 st.metric("🔸 Fast vollständig", len(partiell))
             with mc3:
-                st.metric("🍽️ Rezepte gesamt", len(matches))
+                st.metric("🥘 Rezepte gesamt", len(matches))
 
             st.markdown("---")
 
             # ── Vollständige Matches ──────────────────────────────────────
             if not vollstaendig.empty:
-                st.markdown("#### ✅ Diese Rezepte kannst du sofort kochen!")
+                st.markdown(
+                    '<p class="rezepte-header">✅ Diese Rezepte kannst du sofort kochen!</p>',
+                    unsafe_allow_html=True,
+                )
                 for idx, (_, match) in enumerate(vollstaendig.iterrows()):
-                    row = match["row"]
-                    name = row.get("Name des Gerichts", "Unbekannt")
-                    zeit = row.get("Benötigte Zeit", 0)
-                    vorhanden = match["vorhanden"]
-                    anzahl_gesamt = match["anzahl_gesamt"]
+                    row            = match["row"]
+                    name           = row.get("Name des Gerichts", "Unbekannt")
+                    zeit           = row.get("Benötigte Zeit", 0)
+                    vorhanden      = match["vorhanden"]
+                    anzahl_gesamt  = match["anzahl_gesamt"]
+                    zutat_tags     = " ".join([f'<span class="zutat-tag">{z}</span>' for z in vorhanden])
 
-                    zutat_tags = " ".join([f'<span class="zutat-tag">{z}</span>' for z in vorhanden])
-
-                    with st.expander(f"✅ {name}  •  ⏱️ {zeit} min", expanded=False):
+                    with st.expander(f"✅ {name}  ·  ⏱ {zeit} min", expanded=False):
                         st.markdown(
-                            f'<span class="match-badge-full">Alle {anzahl_gesamt} Zutaten vorhanden</span>',
-                            unsafe_allow_html=True
+                            f'<span class="match-badge-full">Alle {anzahl_gesamt} Zutaten vorhanden 🎉</span>',
+                            unsafe_allow_html=True,
                         )
                         st.markdown("")
                         st.markdown('<div class="section-label">🧂 Zutaten (alle vorhanden)</div>', unsafe_allow_html=True)
@@ -1412,11 +1574,7 @@ with tab3:
                                 if done:
                                     st.progress(len(done)/len(steps), text=f"{len(done)}/{len(steps)} erledigt")
                                 for i, step in enumerate(steps):
-                                    checked = st.checkbox(
-                                        step,
-                                        value=(i in done),
-                                        key=f"mstep_{idx}_{i}"
-                                    )
+                                    checked = st.checkbox(step, value=(i in done), key=f"mstep_{idx}_{i}")
                                     if checked:
                                         done.add(i)
                                     else:
@@ -1425,7 +1583,6 @@ with tab3:
                                 for step in steps:
                                     st.markdown(step)
 
-                        # Koch-Tipps auch im Zutaten-Check
                         tipps = row.get("Koch-Tipps", "") if "Koch-Tipps" in row.index else ""
                         if tipps and tipps.strip():
                             st.markdown(f"""
@@ -1438,14 +1595,17 @@ with tab3:
             # ── Partielle Matches ─────────────────────────────────────────
             if not partiell.empty:
                 st.markdown("---")
-                st.markdown("#### 🔸 Fast dabei – nur noch ein paar Zutaten fehlen")
+                st.markdown(
+                    '<p class="rezepte-header">🔸 Fast dabei – nur noch ein paar Zutaten fehlen</p>',
+                    unsafe_allow_html=True,
+                )
 
                 sort_col, _ = st.columns([2, 2])
                 with sort_col:
                     min_anteil = st.slider(
                         "Mindestanteil vorhandener Zutaten",
                         min_value=0, max_value=100, value=50, step=10,
-                        format="%d%%", key="min_anteil_slider"
+                        format="%d%%", key="min_anteil_slider",
                     )
 
                 partiell_gefiltert = partiell[partiell["anteil"] >= min_anteil / 100]
@@ -1454,25 +1614,25 @@ with tab3:
                     st.info(f"Keine Rezepte mit mindestens {min_anteil}% der Zutaten vorhanden.")
                 else:
                     for _, match in partiell_gefiltert.iterrows():
-                        row = match["row"]
-                        name = row.get("Name des Gerichts", "Unbekannt")
-                        zeit = row.get("Benötigte Zeit", 0)
-                        vorhanden = match["vorhanden"]
-                        fehlend   = match["fehlend"]
+                        row              = match["row"]
+                        name             = row.get("Name des Gerichts", "Unbekannt")
+                        zeit             = row.get("Benötigte Zeit", 0)
+                        vorhanden        = match["vorhanden"]
+                        fehlend          = match["fehlend"]
                         anzahl_gesamt    = match["anzahl_gesamt"]
                         anzahl_vorhanden = match["anzahl_vorhanden"]
-                        anteil_pct = int(match["anteil"] * 100)
+                        anteil_pct       = int(match["anteil"] * 100)
 
                         vorhanden_tags = " ".join([f'<span class="zutat-tag">{z}</span>' for z in vorhanden])
                         fehlend_tags   = " ".join([f'<span class="zutat-tag-missing">{z}</span>' for z in fehlend])
 
                         with st.expander(
-                            f"🔸 {name}  •  ⏱️ {zeit} min  •  {anzahl_vorhanden}/{anzahl_gesamt} ({anteil_pct}%)",
-                            expanded=False
+                            f"🔸 {name}  ·  ⏱ {zeit} min  ·  {anzahl_vorhanden}/{anzahl_gesamt} ({anteil_pct}%)",
+                            expanded=False,
                         ):
                             st.markdown(
                                 f'<span class="match-badge-partial">{anzahl_vorhanden} von {anzahl_gesamt} Zutaten ({anteil_pct}%)</span>',
-                                unsafe_allow_html=True
+                                unsafe_allow_html=True,
                             )
                             st.markdown("")
                             col_v, col_f = st.columns(2)
@@ -1480,5 +1640,5 @@ with tab3:
                                 st.markdown('<div class="section-label">✅ Vorhanden</div>', unsafe_allow_html=True)
                                 st.markdown(vorhanden_tags if vorhanden_tags else "_–_", unsafe_allow_html=True)
                             with col_f:
-                                st.markdown('<div class="section-label">❌ Fehlend</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="section-label">❌ Noch kaufen</div>', unsafe_allow_html=True)
                                 st.markdown(fehlend_tags if fehlend_tags else "_–_", unsafe_allow_html=True)
