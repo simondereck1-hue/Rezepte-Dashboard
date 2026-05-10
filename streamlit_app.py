@@ -1,16 +1,13 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║         MEIN KOCHBUCH – "Die Seele der Küche"                               ║
-║         Liebenswert. Handgefertigt. Persönlich.                             ║
+║         MEIN KOCHBUCH – „Die Seele der Küche"  [REDESIGN v2]               ║
 ║                                                                              ║
-║  ✦ Warmes Kochbuch-Design (Cremeweiß, Salbei, Terrakotta, Senf)            ║
-║  ✦ Verspielte, abgerundete Formen – kein harter Business-Look               ║
-║  ✦ Intelligente Zutaten-Normalisierung (Regex-Cleaner)                      ║
-║  ✦ Mengenangaben & Einheiten werden beim Abgleich ignoriert                 ║
-║  ✦ Favoriten-Funktion (Session State)                                       ║
-║  ✦ Portionsrechner mit Regex-basierter Mengenumrechnung                     ║
-║  ✦ Interaktive Schritt-Checkliste (Koch-Modus)                              ║
-║  ✦ Google-Sheets-Backend (unverändert)                                      ║
+║  ✦ Screenshot-getreues Design: Terrakotta-Header, dunkle Sidebar           ║
+║  ✦ Playfair Display (Überschriften) + Lato (Fließtext)                     ║
+║  ✦ Karten-Layout mit weichen Schatten & abgerundeten Ecken (28px)          ║
+║  ✦ Pillenförmige Ingredient-Tags & Status-Badges                           ║
+║  ✦ Luftige Abstände (White-Space-First-Ansatz)                             ║
+║  ✦ Alle Backend-Funktionen identisch (Google Sheets, Regex, Favoriten)     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -29,634 +26,774 @@ st.set_page_config(
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CSS DESIGN-SYSTEM: „Die Seele der Küche"
+# ██████████████████████████  CSS DESIGN-SYSTEM  ██████████████████████████████
 #
-# Farbpalette:
-#   --creme      #FDF8F2  → warmes Hintergrundweiß (Leinen)
-#   --kaffee     #3D2314  → dunkles Kaffeebraun (Text)
-#   --terrakotta #C8603A  → warmer Akzent (Hauptfarbe)
-#   --salbei     #7A9E7E  → kühler Gegenpol (Grün)
-#   --senf       #D4A017  → goldgelber Akzent (Tipps, Badges)
-#   --rosé       #F5C2B0  → zartes Pfirsichrosa (Hover, Hintergrund)
-#   --sand       #EDE0D4  → warmes Sandbeige (Karten, Ränder)
+#  Farbpalette (Screenshot-Referenz):
+#   --creme      #FBF5EC   warmes Leinen / Seitenhintergrund
+#   --braun-d    #3B1F0E   tiefstes Dunkelbraun (Sidebar-Basis)
+#   --braun-m    #5C2E10   mittleres Braun (Sidebar-Akzent)
+#   --terra      #C85A28   Terrakotta (Header-Gradient, Hauptakzent)
+#   --terra-hell #E07848   helles Terrakotta
+#   --sand       #EAD9C8   Sand / Karten-Border
+#   --sand-hell  #F5EDE0   sehr heller Sand
+#   --salbei     #6E9673   Grün (vorhanden-Tags, Salbei)
+#   --senf       #C99010   Gold (Tipps-Box, Badges)
+#   --text-d     #2E1608   sehr dunkler Text
+#   --text-m     #5E3820   mittelbrauner Text
+#
 # ══════════════════════════════════════════════════════════════════════════════
-st.markdown("""
+CSS = """
 <style>
-    /* ═══════════════════════════════════════════════════════
-       FONTS: Lora (serif, charaktervoll) + Nunito (rund, freundlich)
-    ═══════════════════════════════════════════════════════ */
-    @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,700;1,400;1,600&family=Nunito:wght@300;400;600;700;800&display=swap');
+/* ═══════════════════════════════════════════════════════════════
+   FONTS: Playfair Display (Display/Headings) + Lato (Body)
+═══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,500;1,600&family=Lato:wght@300;400;700;900&display=swap');
 
-    /* ═══════════════════════════════════════════════════════
-       CSS CUSTOM PROPERTIES (Design Tokens)
-    ═══════════════════════════════════════════════════════ */
-    :root {
-        --creme:      #FDF8F2;
-        --kaffee:     #3D2314;
-        --kaffee-mid: #6B3E26;
-        --terrakotta: #C8603A;
-        --terra-soft: #F5E0D6;
-        --salbei:     #7A9E7E;
-        --salbei-soft:#DFF0E2;
-        --senf:       #D4A017;
-        --senf-soft:  #FFF5D6;
-        --rosé:       #F5C2B0;
-        --sand:       #EDE0D4;
-        --sand-mid:   #D9C9BA;
-        --weiss:      #FFFFFF;
-    }
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════════════════ */
+:root {
+    --creme:       #FBF5EC;
+    --braun-d:     #3B1F0E;
+    --braun-m:     #6B3A1E;
+    --braun-s:     #8C4E28;
+    --terra:       #C85A28;
+    --terra-hell:  #E07848;
+    --terra-soft:  #F5E0D2;
+    --sand:        #E8D4BC;
+    --sand-hell:   #F5EDE0;
+    --sand-mid:    #D4B898;
+    --salbei:      #6E9673;
+    --salbei-soft: #DCF0DF;
+    --senf:        #C99010;
+    --senf-soft:   #FFF4D0;
+    --rose-soft:   #FDEAE8;
+    --rose-mid:    #F0A898;
+    --text-d:      #2E1608;
+    --text-m:      #5E3820;
+    --text-s:      #8A5E40;
+    --weiss:       #FFFFFF;
+    --radius-lg:   28px;
+    --radius-md:   20px;
+    --radius-sm:   14px;
+    --radius-pill: 100px;
+    --shadow-card: 0 4px 24px rgba(46,22,8,0.09), 0 1px 6px rgba(46,22,8,0.05);
+    --shadow-hover: 0 12px 40px rgba(46,22,8,0.16), 0 2px 10px rgba(46,22,8,0.08);
+    --shadow-hero: 0 8px 40px rgba(46,22,8,0.20), 0 2px 10px rgba(46,22,8,0.10);
+}
 
-    /* ═══════════════════════════════════════════════════════
-       RESET & BASIS-SCHRIFTEN
-    ═══════════════════════════════════════════════════════ */
-    html, body, [class*="css"] {
-        font-family: 'Nunito', sans-serif;
-        color: var(--kaffee);
-    }
-    p, span, label, div, li { color: inherit; }
-    .stMarkdown p, .stMarkdown span, .stMarkdown li {
-        color: var(--kaffee) !important;
-        font-family: 'Nunito', sans-serif !important;
-    }
+/* ═══════════════════════════════════════════════════════════════
+   RESET & TYPOGRAFIE-BASIS
+═══════════════════════════════════════════════════════════════ */
+html, body, [class*="css"] {
+    font-family: 'Lato', sans-serif;
+    color: var(--text-d);
+}
+p, span, label, div, li { color: inherit; }
+.stMarkdown p, .stMarkdown span, .stMarkdown li {
+    color: var(--text-d) !important;
+    font-family: 'Lato', sans-serif !important;
+}
+h1, h2, h3, h4 {
+    font-family: 'Playfair Display', serif !important;
+    color: var(--text-d) !important;
+}
 
-    /* ═══════════════════════════════════════════════════════
-       APP HINTERGRUND – warmes Cremeweiß mit subtiler Textur
-       (Wiederholendes Muster aus großen Punkten = Brotteig-Vibe)
-    ═══════════════════════════════════════════════════════ */
-    .stApp {
-        background-color: var(--creme);
-        background-image:
-            radial-gradient(circle at 1px 1px, rgba(200,96,58,0.05) 1px, transparent 0);
-        background-size: 32px 32px;
-    }
+/* ═══════════════════════════════════════════════════════════════
+   APP HINTERGRUND – warmes Cremepapier mit feiner Textur
+═══════════════════════════════════════════════════════════════ */
+.stApp {
+    background-color: var(--creme);
+    background-image:
+        radial-gradient(circle at 2px 2px, rgba(200,90,40,0.04) 1px, transparent 0);
+    background-size: 28px 28px;
+}
 
-    /* ═══════════════════════════════════════════════════════
-       HERO HEADER – warm & einladend, wie ein Kochbuch-Cover
-    ═══════════════════════════════════════════════════════ */
-    .hero-header {
-        background:
-            radial-gradient(ellipse at 20% 50%, rgba(212,160,23,0.25) 0%, transparent 60%),
-            radial-gradient(ellipse at 80% 20%, rgba(122,158,126,0.2) 0%, transparent 50%),
-            linear-gradient(135deg, #8B3A1E 0%, #C8603A 45%, #E8845A 100%);
-        border-radius: 28px;
-        padding: 2.8rem 3.5rem 2.5rem 3.5rem;
-        margin-bottom: 2.2rem;
-        position: relative;
-        overflow: hidden;
-        box-shadow:
-            0 8px 32px rgba(61, 35, 20, 0.18),
-            0 2px 8px rgba(61, 35, 20, 0.10);
-    }
-    /* Dekorative Kreise – wie Teller-Silhouetten */
-    .hero-header::before {
-        content: "🍳";
-        font-size: 10rem;
-        position: absolute;
-        right: 4%;
-        top: 50%;
-        transform: translateY(-50%) rotate(-15deg);
-        opacity: 0.12;
-        line-height: 1;
-    }
-    .hero-header::after {
-        content: "";
-        position: absolute;
-        bottom: -60px;
-        left: -40px;
-        width: 200px;
-        height: 200px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.06);
-    }
-    .hero-title {
-        font-family: 'Lora', serif;
-        font-size: 2.8rem;
-        font-weight: 700;
-        font-style: italic;
-        color: #FFF8F0;
-        margin: 0 0 0.3rem 0;
-        line-height: 1.2;
-        position: relative;
-        z-index: 1;
-        text-shadow: 0 2px 12px rgba(61,35,20,0.3);
-    }
-    .hero-subtitle {
-        font-family: 'Nunito', sans-serif;
-        font-size: 1rem;
-        color: rgba(255, 248, 240, 0.82);
-        margin: 0 0 1.8rem 0;
-        font-weight: 400;
-        position: relative;
-        z-index: 1;
-    }
-    .hero-stats {
-        display: flex;
-        gap: 1.5rem;
-        position: relative;
-        z-index: 1;
-        flex-wrap: wrap;
-    }
-    .hero-stat {
-        background: rgba(255,255,255,0.15);
-        backdrop-filter: blur(4px);
-        border-radius: 16px;
-        padding: 0.6rem 1.2rem;
-        text-align: center;
-        border: 1px solid rgba(255,255,255,0.2);
-    }
-    .hero-stat-number {
-        font-family: 'Lora', serif;
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: #FFECD0;
-        display: block;
-        line-height: 1;
-    }
-    .hero-stat-label {
-        font-size: 0.7rem;
-        color: rgba(255, 248, 240, 0.75);
-        text-transform: uppercase;
-        letter-spacing: 1.2px;
-        font-weight: 700;
-        font-family: 'Nunito', sans-serif;
-    }
+/* Main content padding */
+.main .block-container {
+    padding: 2rem 2.5rem 4rem 2.5rem !important;
+    max-width: 1280px !important;
+}
 
-    /* ═══════════════════════════════════════════════════════
-       METRIC CARDS – sanft & warm
-    ═══════════════════════════════════════════════════════ */
-    [data-testid="stMetricValue"] {
-        color: var(--terrakotta) !important;
-        font-family: 'Lora', serif !important;
-        font-weight: 700 !important;
-        font-size: 1.9rem !important;
-    }
-    [data-testid="stMetricLabel"] {
-        color: var(--kaffee-mid) !important;
-        font-weight: 700 !important;
-        font-size: 0.75rem !important;
-        letter-spacing: 0.3px !important;
-    }
-    [data-testid="metric-container"] {
-        background: var(--weiss) !important;
-        border-radius: 20px !important;
-        padding: 1rem 1.2rem !important;
-        border: 1.5px solid var(--sand) !important;
-        box-shadow: 0 2px 10px rgba(61,35,20,0.06) !important;
-    }
+/* ═══════════════════════════════════════════════════════════════
+   HERO HEADER – Terrakotta Kochbuch-Cover (Screenshot-Stil)
+═══════════════════════════════════════════════════════════════ */
+.hero-header {
+    background:
+        radial-gradient(ellipse at 15% 40%, rgba(212,140,40,0.30) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 20%, rgba(100,60,20,0.25) 0%, transparent 50%),
+        linear-gradient(135deg, #8B3510 0%, #C85A28 40%, #D97040 70%, #E88A55 100%);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 3rem 2.2rem 3rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-hero);
+}
+/* Dekorativer Kochlöffel-Kreis */
+.hero-header::before {
+    content: "🥘";
+    font-size: 9rem;
+    position: absolute;
+    right: 3%;
+    top: 50%;
+    transform: translateY(-50%) rotate(-8deg);
+    opacity: 0.13;
+    line-height: 1;
+    pointer-events: none;
+}
+/* Heller Reflex-Kreis */
+.hero-header::after {
+    content: "";
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+    pointer-events: none;
+}
+.hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.6rem;
+    font-weight: 700;
+    font-style: italic;
+    color: #FFF4E8;
+    margin: 0 0 0.25rem 0;
+    line-height: 1.15;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 2px 16px rgba(46,22,8,0.35);
+    letter-spacing: -0.5px;
+}
+.hero-subtitle {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 300;
+    color: rgba(255,244,232,0.82);
+    margin: 0 0 2rem 0;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.3px;
+}
+.hero-stats {
+    display: flex;
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+    flex-wrap: wrap;
+}
+.hero-stat {
+    background: rgba(255,255,255,0.14);
+    backdrop-filter: blur(6px);
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 1.3rem 0.55rem;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.18);
+    min-width: 80px;
+    transition: background 0.2s ease;
+}
+.hero-stat:hover {
+    background: rgba(255,255,255,0.20);
+}
+.hero-stat-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #FFEAD0;
+    display: block;
+    line-height: 1;
+    margin-bottom: 0.2rem;
+}
+.hero-stat-label {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.68rem;
+    color: rgba(255,244,232,0.72);
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    font-weight: 700;
+}
 
-    /* ═══════════════════════════════════════════════════════
-       TABS – rund & freundlich
-    ═══════════════════════════════════════════════════════ */
-    .stTabs [data-baseweb="tab-list"] {
-        background: var(--sand) !important;
-        border-radius: 24px !important;
-        padding: 4px !important;
-        gap: 4px !important;
-        border: none !important;
-    }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 20px !important;
-        font-family: 'Nunito', sans-serif !important;
-        font-weight: 700 !important;
-        font-size: 0.88rem !important;
-        color: var(--kaffee-mid) !important;
-        padding: 0.5rem 1.2rem !important;
-        transition: all 0.25s ease !important;
-        border: none !important;
-    }
-    .stTabs [aria-selected="true"] {
-        background: var(--weiss) !important;
-        color: var(--terrakotta) !important;
-        box-shadow: 0 2px 8px rgba(61,35,20,0.12) !important;
-    }
-    .stTabs [data-baseweb="tab-panel"] {
-        padding-top: 1.5rem !important;
-    }
+/* ═══════════════════════════════════════════════════════════════
+   METRIKEN – luftige Karten
+═══════════════════════════════════════════════════════════════ */
+[data-testid="metric-container"] {
+    background: var(--weiss) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 1.1rem 1.4rem !important;
+    border: 1.5px solid var(--sand) !important;
+    box-shadow: var(--shadow-card) !important;
+    transition: box-shadow 0.25s ease !important;
+}
+[data-testid="metric-container"]:hover {
+    box-shadow: var(--shadow-hover) !important;
+}
+[data-testid="stMetricValue"] {
+    color: var(--terra) !important;
+    font-family: 'Playfair Display', serif !important;
+    font-weight: 700 !important;
+    font-size: 1.9rem !important;
+}
+[data-testid="stMetricLabel"] {
+    color: var(--text-m) !important;
+    font-weight: 700 !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.2px !important;
+    font-family: 'Lato', sans-serif !important;
+}
 
-    /* ═══════════════════════════════════════════════════════
-       REZEPT-EXPANDER – Kochbuch-Karte, verspielt & warm
-       Micro-Interaction: leichte Drehung + Hoch-Effekt beim Hover
-    ═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   TABS – Kochbuch-Navigation (Screenshot-Stil: Clips-Look)
+═══════════════════════════════════════════════════════════════ */
+.stTabs [data-baseweb="tab-list"] {
+    background: var(--sand-hell) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 5px !important;
+    gap: 5px !important;
+    border: 1.5px solid var(--sand) !important;
+}
+.stTabs [data-baseweb="tab"] {
+    border-radius: 16px !important;
+    font-family: 'Lato', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
+    color: var(--text-m) !important;
+    padding: 0.5rem 1.3rem !important;
+    transition: all 0.22s ease !important;
+    border: none !important;
+    letter-spacing: 0.2px;
+}
+.stTabs [aria-selected="true"] {
+    background: var(--weiss) !important;
+    color: var(--terra) !important;
+    box-shadow: 0 2px 10px rgba(46,22,8,0.12) !important;
+}
+.stTabs [data-baseweb="tab-panel"] {
+    padding-top: 1.8rem !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REZEPT-KARTE (Expander) – Screenshot-Stil mit Baumrinden-Textur
+═══════════════════════════════════════════════════════════════ */
+.stExpander {
+    background-color: var(--weiss) !important;
+    border-radius: var(--radius-lg) !important;
+    border: 1.5px solid var(--sand) !important;
+    margin-bottom: 0.85rem !important;
+    overflow: hidden !important;
+    box-shadow: var(--shadow-card) !important;
+    transition:
+        box-shadow 0.28s ease,
+        transform 0.28s ease !important;
+}
+.stExpander:hover {
+    box-shadow: var(--shadow-hover) !important;
+    transform: translateY(-2px) !important;
+}
+.stExpander summary {
+    padding: 1.05rem 1.5rem !important;
+    transition: background-color 0.22s ease !important;
+    border-radius: var(--radius-lg) !important;
+}
+.stExpander summary:hover {
+    background-color: var(--sand-hell) !important;
+}
+.stExpander summary p {
+    color: var(--text-d) !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    font-family: 'Lato', sans-serif !important;
+}
+.stExpander [data-testid="stExpanderDetails"] {
+    padding: 0.8rem 1.6rem 1.5rem 1.6rem !important;
+}
+.stExpander [data-testid="stExpanderDetails"] p,
+.stExpander [data-testid="stExpanderDetails"] span,
+.stExpander [data-testid="stExpanderDetails"] label,
+.stExpander [data-testid="stExpanderDetails"] div,
+.stExpander [data-testid="stExpanderDetails"] li {
+    color: var(--text-d) !important;
+}
+[data-testid="stCheckbox"] label span,
+[data-testid="stCheckbox"] span p {
+    color: var(--text-d) !important;
+    font-size: 0.91rem !important;
+    font-family: 'Lato', sans-serif !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BADGES – pillenförmig (Screenshot-Stil)
+═══════════════════════════════════════════════════════════════ */
+.badge {
+    display: inline-block;
+    padding: 0.22rem 0.8rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.69rem;
+    font-weight: 900;
+    letter-spacing: 0.4px;
+    margin: 0.15rem 0.1rem;
+    font-family: 'Lato', sans-serif;
+    text-transform: uppercase;
+}
+.badge-kategorie  {
+    background: var(--terra-soft);
+    color: #7A2A10;
+    border: 1px solid rgba(200,90,40,0.2);
+}
+.badge-ernaehrung {
+    background: var(--salbei-soft);
+    color: #2D5E32;
+    border: 1px solid rgba(110,150,115,0.25);
+}
+.badge-saison {
+    background: #D8E8FA;
+    color: #1A3D7A;
+    border: 1px solid rgba(30,70,160,0.15);
+}
+.badge-aufwand-leicht {
+    background: var(--salbei-soft);
+    color: #2D5E32;
+    border: 1px solid rgba(110,150,115,0.25);
+}
+.badge-aufwand-mittel {
+    background: var(--senf-soft);
+    color: #6A4800;
+    border: 1px solid rgba(200,144,16,0.2);
+}
+.badge-aufwand-schwer {
+    background: var(--terra-soft);
+    color: #7A2A10;
+    border: 1px solid rgba(200,90,40,0.2);
+}
+
+/* Favoriten-Badge */
+.fav-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #F07090, #D84060);
+    color: white;
+    padding: 0.22rem 0.85rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.69rem;
+    font-weight: 900;
+    font-family: 'Lato', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION LABELS – wie gedruckte Rubriken im Kochbuch
+═══════════════════════════════════════════════════════════════ */
+.section-label {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.66rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    color: var(--terra);
+    margin: 1.4rem 0 0.65rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px dashed var(--sand);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ZUTAT GRID – organische Pillen
+═══════════════════════════════════════════════════════════════ */
+.zutat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 0.45rem;
+    margin-top: 0.5rem;
+}
+.zutat-item {
+    background: var(--creme);
+    border: 1.5px solid var(--sand);
+    border-radius: var(--radius-sm);
+    padding: 0.42rem 0.75rem;
+    font-size: 0.82rem;
+    color: var(--text-d);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Lato', sans-serif;
+    transition: border-color 0.18s ease;
+}
+.zutat-item:hover {
+    border-color: var(--terra);
+}
+.zutat-menge {
+    font-weight: 900;
+    color: var(--terra);
+    white-space: nowrap;
+    font-size: 0.78rem;
+}
+.zutat-name {
+    color: var(--text-m);
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ZUTATEN-TAGS (Match-Anzeige) – Screenshot-Pille
+═══════════════════════════════════════════════════════════════ */
+.zutat-tag {
+    display: inline-block;
+    background: var(--salbei-soft);
+    color: #2D5E32;
+    border-radius: var(--radius-pill);
+    padding: 0.22rem 0.75rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    margin: 0.15rem 0.1rem;
+    font-family: 'Lato', sans-serif;
+    border: 1px solid rgba(110,150,115,0.25);
+}
+.zutat-tag-missing {
+    display: inline-block;
+    background: var(--terra-soft);
+    color: #7A2A10;
+    border-radius: var(--radius-pill);
+    padding: 0.22rem 0.75rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    margin: 0.15rem 0.1rem;
+    font-family: 'Lato', sans-serif;
+    border: 1px solid rgba(200,90,40,0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCHRITT-CHECKLISTE
+═══════════════════════════════════════════════════════════════ */
+.step-done {
+    opacity: 0.38;
+    text-decoration: line-through;
+    color: var(--text-s) !important;
+}
+.step-active { color: var(--text-d); }
+
+/* ═══════════════════════════════════════════════════════════════
+   TIPP-BOX – goldener Chef's Tipp
+═══════════════════════════════════════════════════════════════ */
+.tipp-box {
+    background: var(--senf-soft);
+    border: 1.5px solid rgba(201,144,16,0.35);
+    border-left: 5px solid var(--senf);
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1.4rem;
+    margin-top: 1.3rem;
+}
+.tipp-box-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-style: italic;
+    color: #6A4800;
+    margin: 0 0 0.38rem 0;
+}
+.tipp-box-text {
+    font-size: 0.88rem;
+    color: #4A3000;
+    line-height: 1.7;
+    margin: 0;
+    font-family: 'Lato', sans-serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MATCH BADGES (Zutaten-Check)
+═══════════════════════════════════════════════════════════════ */
+.match-badge-full {
+    display: inline-block;
+    background: linear-gradient(135deg, #7AAE7E, #4A8055);
+    color: #fff;
+    padding: 0.3rem 1.1rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.73rem;
+    font-weight: 900;
+    font-family: 'Lato', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.match-badge-partial {
+    display: inline-block;
+    background: linear-gradient(135deg, #E0A858, #C07C28);
+    color: #fff;
+    padding: 0.3rem 1.1rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.73rem;
+    font-weight: 900;
+    font-family: 'Lato', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ZUTATEN-CHECK HEADER – Salbei-Grün
+═══════════════════════════════════════════════════════════════ */
+.zutat-check-header {
+    background: linear-gradient(135deg, var(--salbei-soft), #C8E8CC);
+    border-radius: var(--radius-lg);
+    padding: 1.6rem 2.2rem;
+    margin-bottom: 1.8rem;
+    border: 1.5px solid rgba(110,150,115,0.3);
+    box-shadow: var(--shadow-card);
+}
+.zutat-check-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: var(--text-d) !important;
+    margin: 0 0 0.45rem 0;
+    font-size: 1.5rem;
+}
+.zutat-check-header p {
+    color: var(--text-m) !important;
+    font-size: 0.9rem;
+    margin: 0;
+    line-height: 1.65;
+    font-family: 'Lato', sans-serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REZEPTE-HEADER (Trennlinie-Stil)
+═══════════════════════════════════════════════════════════════ */
+.rezepte-header {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: var(--text-d);
+    font-size: 1.28rem;
+    margin: 0.4rem 0 1.1rem 0;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px dashed var(--sand-mid);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NO-RESULTS
+═══════════════════════════════════════════════════════════════ */
+.no-results {
+    background: var(--weiss);
+    border: 2px dashed var(--sand-mid);
+    border-radius: var(--radius-lg);
+    padding: 3.5rem 2rem;
+    text-align: center;
+    margin: 2.5rem 0;
+}
+.no-results h2 {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: var(--text-m);
+    font-size: 1.5rem;
+    margin: 0 0 0.65rem 0;
+}
+.no-results p {
+    color: var(--text-s) !important;
+    font-size: 0.95rem;
+    font-family: 'Lato', sans-serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR – Dunkles Kaffeebraun (Screenshot-Stil: fast Schwarz)
+═══════════════════════════════════════════════════════════════ */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(
+        175deg,
+        #241208 0%,
+        #3B1F0E 45%,
+        #4E2A14 100%
+    ) !important;
+}
+section[data-testid="stSidebar"] > div {
+    background: transparent !important;
+}
+section[data-testid="stSidebar"] .stMarkdown,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] .stSlider p,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span {
+    color: #F0E0CC !important;
+    font-family: 'Lato', sans-serif !important;
+}
+section[data-testid="stSidebar"] [data-baseweb="tag"] span,
+section[data-testid="stSidebar"] [data-baseweb="select"] span,
+section[data-testid="stSidebar"] [data-baseweb="select"] div {
+    color: #F0E0CC !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="input"] {
+    background-color: rgba(255,255,255,0.08) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+    border-radius: var(--radius-sm) !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="input"] input {
+    color: #F0E0CC !important;
+    font-family: 'Lato', sans-serif !important;
+}
+section[data-testid="stSidebar"] input::placeholder {
+    color: rgba(240,224,204,0.45) !important;
+}
+section[data-testid="stSidebar"] h2 {
+    color: #FFE8C8 !important;
+    font-family: 'Playfair Display', serif !important;
+    font-style: italic !important;
+    font-size: 1.25rem !important;
+    letter-spacing: -0.3px;
+}
+section[data-testid="stSidebar"] [data-baseweb="select"] > div {
+    background: rgba(255,255,255,0.09) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+    border-radius: var(--radius-sm) !important;
+}
+/* Sidebar Expander */
+section[data-testid="stSidebar"] .stExpander {
+    background-color: rgba(255,255,255,0.07) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+    border-radius: 16px !important;
+}
+section[data-testid="stSidebar"] .stExpander:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+section[data-testid="stSidebar"] .stExpander summary p {
+    color: #F0E0CC !important;
+}
+/* Sidebar Slider */
+section[data-testid="stSidebar"] .stSlider [data-baseweb="thumb"] {
+    background: var(--terra) !important;
+}
+section[data-testid="stSidebar"] .stSlider [data-baseweb="track-fill"] {
+    background: var(--terra) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BUTTONS – warm & rund
+═══════════════════════════════════════════════════════════════ */
+.stButton > button {
+    border-radius: var(--radius-md) !important;
+    font-family: 'Lato', sans-serif !important;
+    font-weight: 700 !important;
+    border: 1.5px solid var(--sand-mid) !important;
+    background: var(--weiss) !important;
+    color: var(--text-d) !important;
+    transition: all 0.2s ease !important;
+    padding: 0.42rem 1.1rem !important;
+    letter-spacing: 0.2px;
+}
+.stButton > button:hover {
+    background: var(--terra-soft) !important;
+    border-color: var(--terra) !important;
+    color: var(--terra) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(200,90,40,0.18) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EINGABEFELDER – warm & einladend
+═══════════════════════════════════════════════════════════════ */
+.stTextInput > div > div > input {
+    border-radius: var(--radius-sm) !important;
+    border: 1.5px solid var(--sand-mid) !important;
+    background: var(--weiss) !important;
+    color: var(--text-d) !important;
+    font-family: 'Lato', sans-serif !important;
+    padding: 0.5rem 1rem !important;
+}
+.stTextInput > div > div > input:focus {
+    border-color: var(--terra) !important;
+    box-shadow: 0 0 0 3px rgba(200,90,40,0.12) !important;
+}
+.stTextInput label {
+    font-family: 'Lato', sans-serif !important;
+    font-weight: 700 !important;
+    color: var(--text-m) !important;
+    font-size: 0.86rem !important;
+}
+
+/* Number Input */
+.stNumberInput > div > div > input {
+    border-radius: var(--radius-sm) !important;
+    border: 1.5px solid var(--sand-mid) !important;
+    font-family: 'Lato', sans-serif !important;
+    color: var(--text-d) !important;
+}
+
+/* Slider */
+.stSlider [data-baseweb="thumb"] {
+    background: var(--terra) !important;
+}
+.stSlider [data-baseweb="track-fill"] {
+    background: var(--terra) !important;
+}
+
+/* Multiselect */
+[data-baseweb="tag"] {
+    background: var(--terra-soft) !important;
+    border-radius: 10px !important;
+}
+[data-baseweb="tag"] span { color: #7A2A10 !important; }
+
+/* Progress bar */
+.stProgress > div > div > div > div {
+    background: linear-gradient(90deg, var(--salbei), #4A8055) !important;
+    border-radius: 10px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TRENNLINIE IN KARTEN
+═══════════════════════════════════════════════════════════════ */
+.stExpander hr, hr {
+    border: none !important;
+    border-top: 1.5px dashed var(--sand) !important;
+    margin: 0.8rem 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SELECTBOX & MULTISELECT IN SIDEBAR
+═══════════════════════════════════════════════════════════════ */
+section[data-testid="stSidebar"] [data-baseweb="popover"] {
+    background: #4E2A14 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ATMOSPHÄRISCHE SECTION-DIVIDER
+═══════════════════════════════════════════════════════════════ */
+.divider-warm {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--sand), transparent);
+    margin: 2rem 0;
+    border: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   KARTEN INFO-BOX (stAlert/stInfo)
+═══════════════════════════════════════════════════════════════ */
+[data-testid="stAlert"] {
+    border-radius: var(--radius-md) !important;
+    border: 1.5px solid var(--sand) !important;
+    font-family: 'Lato', sans-serif !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DRUCK-MODUS
+═══════════════════════════════════════════════════════════════ */
+@media print {
+    section[data-testid="stSidebar"],
+    .stButton,
+    [data-testid="stNumberInput"],
+    .stTabs [data-baseweb="tab-list"] { display: none !important; }
+    .stApp { background: white !important; }
     .stExpander {
-        background-color: var(--weiss) !important;
-        border-radius: 24px !important;
-        border: 1.5px solid var(--sand) !important;
-        margin-bottom: 1rem !important;
-        overflow: hidden;
-        box-shadow:
-            0 3px 12px rgba(61,35,20,0.07),
-            0 1px 4px rgba(61,35,20,0.04);
-        transition:
-            box-shadow 0.3s ease,
-            transform 0.3s ease !important;
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
-    .stExpander:hover {
-        box-shadow:
-            0 10px 32px rgba(61,35,20,0.14),
-            0 2px 8px rgba(61,35,20,0.08) !important;
-        transform: translateY(-3px) rotate(0.4deg) !important;
-    }
-    .stExpander summary {
-        padding: 1rem 1.4rem !important;
-        transition: background-color 0.25s ease !important;
-    }
-    .stExpander summary:hover {
-        background-color: var(--terra-soft) !important;
-    }
-    .stExpander summary p {
-        color: var(--kaffee) !important;
-        font-weight: 700 !important;
-        font-size: 1.02rem !important;
-        font-family: 'Nunito', sans-serif !important;
-    }
-    .stExpander [data-testid="stExpanderDetails"] {
-        color: var(--kaffee) !important;
-        padding: 1.2rem 1.6rem 1.4rem 1.6rem !important;
-    }
-    .stExpander [data-testid="stExpanderDetails"] p,
-    .stExpander [data-testid="stExpanderDetails"] span,
-    .stExpander [data-testid="stExpanderDetails"] label,
-    .stExpander [data-testid="stExpanderDetails"] div,
-    .stExpander [data-testid="stExpanderDetails"] li {
-        color: var(--kaffee) !important;
-    }
-    [data-testid="stCheckbox"] label,
-    [data-testid="stCheckbox"] span,
-    [data-testid="stCheckbox"] p {
-        color: var(--kaffee) !important;
-        font-size: 0.92rem !important;
-        font-family: 'Nunito', sans-serif !important;
-    }
+    .hero-header { break-after: avoid; }
+}
 
-    /* ═══════════════════════════════════════════════════════
-       BADGES – organisch & rund
-    ═══════════════════════════════════════════════════════ */
-    .badge {
-        display: inline-block;
-        padding: 0.22rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 800;
-        letter-spacing: 0.3px;
-        margin: 0.15rem;
-        font-family: 'Nunito', sans-serif;
-    }
-    .badge-kategorie  { background: var(--terra-soft); color: #8B3A1E; }
-    .badge-ernaehrung { background: var(--salbei-soft); color: #3D6B42; }
-    .badge-saison     { background: #DDE8FB; color: #1E4B8C; }
-    .badge-aufwand-leicht { background: var(--salbei-soft); color: #3D6B42; }
-    .badge-aufwand-mittel { background: var(--senf-soft); color: #7A5A00; }
-    .badge-aufwand-schwer { background: var(--terra-soft); color: #8B3A1E; }
-
-    /* ═══════════════════════════════════════════════════════
-       FAVORITEN-BADGE (Herz) – warm & rosig
-    ═══════════════════════════════════════════════════════ */
-    .fav-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #F5A0B0, #E06080);
-        color: white;
-        padding: 0.22rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 800;
-        font-family: 'Nunito', sans-serif;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       SECTION LABELS – wie handgeschriebene Rubriken
-    ═══════════════════════════════════════════════════════ */
-    .section-label {
-        font-size: 0.68rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        color: var(--terrakotta);
-        margin: 1.3rem 0 0.6rem 0;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px dashed var(--sand);
-        font-family: 'Nunito', sans-serif;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       ZUTAT GRID – organisches Erscheinungsbild
-    ═══════════════════════════════════════════════════════ */
-    .zutat-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-        gap: 0.45rem;
-        margin-top: 0.5rem;
-    }
-    .zutat-item {
-        background: var(--creme);
-        border: 1.5px solid var(--sand);
-        border-radius: 14px;
-        padding: 0.4rem 0.7rem;
-        font-size: 0.82rem;
-        color: var(--kaffee);
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        font-family: 'Nunito', sans-serif;
-    }
-    .zutat-menge {
-        font-weight: 800;
-        color: var(--terrakotta);
-        white-space: nowrap;
-    }
-    .zutat-name { color: var(--kaffee-mid); font-weight: 600; }
-
-    /* ═══════════════════════════════════════════════════════
-       INTERAKTIVE CHECKLISTE – Koch-Modus
-    ═══════════════════════════════════════════════════════ */
-    .step-done {
-        opacity: 0.4;
-        text-decoration: line-through;
-        color: var(--kaffee-mid) !important;
-    }
-    .step-active { color: var(--kaffee); }
-
-    /* ═══════════════════════════════════════════════════════
-       TIPP-BOX – goldgelbes Sahnehäubchen
-    ═══════════════════════════════════════════════════════ */
-    .tipp-box {
-        background: var(--senf-soft);
-        border: 1.5px solid #E8C860;
-        border-left: 5px solid var(--senf);
-        border-radius: 16px;
-        padding: 1rem 1.3rem;
-        margin-top: 1.2rem;
-    }
-    .tipp-box-title {
-        font-family: 'Lora', serif;
-        font-size: 0.88rem;
-        font-weight: 700;
-        font-style: italic;
-        color: #7A5A00;
-        margin: 0 0 0.35rem 0;
-    }
-    .tipp-box-text {
-        font-size: 0.87rem;
-        color: #5A4200;
-        line-height: 1.65;
-        margin: 0;
-        font-family: 'Nunito', sans-serif;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       MATCH BADGES (Zutaten-Check)
-    ═══════════════════════════════════════════════════════ */
-    .match-badge-full {
-        display: inline-block;
-        background: linear-gradient(135deg, #7A9E7E, #5A8060);
-        color: #fff;
-        padding: 0.3rem 1rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 800;
-        font-family: 'Nunito', sans-serif;
-    }
-    .match-badge-partial {
-        display: inline-block;
-        background: linear-gradient(135deg, #E0A050, #C07830);
-        color: #fff;
-        padding: 0.3rem 1rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 800;
-        font-family: 'Nunito', sans-serif;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       ZUTATEN-TAGS (Matching)
-    ═══════════════════════════════════════════════════════ */
-    .zutat-tag {
-        display: inline-block;
-        background: var(--salbei-soft);
-        color: #3D6B42;
-        border-radius: 12px;
-        padding: 0.2rem 0.6rem;
-        font-size: 0.78rem;
-        font-weight: 700;
-        margin: 0.15rem;
-        font-family: 'Nunito', sans-serif;
-    }
-    .zutat-tag-missing {
-        display: inline-block;
-        background: var(--terra-soft);
-        color: #8B3A1E;
-        border-radius: 12px;
-        padding: 0.2rem 0.6rem;
-        font-size: 0.78rem;
-        font-weight: 700;
-        margin: 0.15rem;
-        font-family: 'Nunito', sans-serif;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       NO-RESULTS ZUSTAND – liebenswert & einladend
-    ═══════════════════════════════════════════════════════ */
-    .no-results {
-        background: var(--weiss);
-        border: 2px dashed var(--sand-mid);
-        border-radius: 28px;
-        padding: 3rem 2rem;
-        text-align: center;
-        margin: 2rem 0;
-    }
-    .no-results h2 {
-        font-family: 'Lora', serif;
-        font-style: italic;
-        color: var(--kaffee-mid);
-        font-size: 1.5rem;
-        margin: 0 0 0.6rem 0;
-    }
-    .no-results p {
-        color: var(--kaffee-mid) !important;
-        font-size: 0.95rem;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       ZUTATEN-CHECK HEADER
-    ═══════════════════════════════════════════════════════ */
-    .zutat-check-header {
-        background: linear-gradient(135deg, var(--salbei-soft), #C8E8CC);
-        border-radius: 24px;
-        padding: 1.5rem 2rem;
-        margin-bottom: 1.5rem;
-        border: 1.5px solid #B8D8BC;
-    }
-    .zutat-check-header h2 {
-        font-family: 'Lora', serif;
-        font-style: italic;
-        color: var(--kaffee);
-        margin: 0 0 0.4rem 0;
-        font-size: 1.5rem;
-    }
-    .zutat-check-header p {
-        color: var(--kaffee-mid) !important;
-        font-size: 0.9rem;
-        margin: 0;
-        line-height: 1.6;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       SIDEBAR – warmes Kaffeebraun
-    ═══════════════════════════════════════════════════════ */
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(
-            170deg,
-            #2A1508 0%,
-            #3D2314 50%,
-            #4E2E1A 100%
-        ) !important;
-    }
-    section[data-testid="stSidebar"] .stMarkdown,
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] .stSlider p,
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] span {
-        color: #F5E6D3 !important;
-        font-family: 'Nunito', sans-serif !important;
-    }
-    section[data-testid="stSidebar"] [data-baseweb="tag"] span,
-    section[data-testid="stSidebar"] [data-baseweb="select"] span,
-    section[data-testid="stSidebar"] [data-baseweb="select"] div {
-        color: #F5E6D3 !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="input"] {
-        background-color: #5A3A28 !important;
-        border-color: #7A5040 !important;
-        border-radius: 14px !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="input"] input {
-        color: #F5E6D3 !important;
-    }
-    section[data-testid="stSidebar"] h2 {
-        color: #FFECD0 !important;
-        font-family: 'Lora', serif !important;
-        font-style: italic !important;
-        font-size: 1.2rem !important;
-    }
-    /* Sidebar-Expander */
-    section[data-testid="stSidebar"] .stExpander summary p {
-        color: #F5E6D3 !important;
-    }
-    section[data-testid="stSidebar"] .stExpander {
-        background-color: #5A3A28 !important;
-        border-color: #7A5040 !important;
-        border-radius: 16px !important;
-    }
-    section[data-testid="stSidebar"] .stExpander:hover {
-        transform: none !important;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       BUTTONS – rund & warm
-    ═══════════════════════════════════════════════════════ */
-    .stButton > button {
-        border-radius: 20px !important;
-        font-family: 'Nunito', sans-serif !important;
-        font-weight: 700 !important;
-        border: 1.5px solid var(--sand-mid) !important;
-        background: var(--weiss) !important;
-        color: var(--kaffee) !important;
-        transition: all 0.2s ease !important;
-        padding: 0.4rem 1rem !important;
-    }
-    .stButton > button:hover {
-        background: var(--terra-soft) !important;
-        border-color: var(--terrakotta) !important;
-        color: var(--terrakotta) !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 4px 12px rgba(200,96,58,0.15) !important;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       EINGABEFELDER – rund & einladend
-    ═══════════════════════════════════════════════════════ */
-    .stTextInput > div > div > input {
-        border-radius: 16px !important;
-        border: 1.5px solid var(--sand-mid) !important;
-        background: var(--weiss) !important;
-        color: var(--kaffee) !important;
-        font-family: 'Nunito', sans-serif !important;
-        padding: 0.5rem 1rem !important;
-    }
-    .stTextInput > div > div > input:focus {
-        border-color: var(--terrakotta) !important;
-        box-shadow: 0 0 0 3px rgba(200,96,58,0.12) !important;
-    }
-    .stTextInput label {
-        font-family: 'Nunito', sans-serif !important;
-        font-weight: 700 !important;
-        color: var(--kaffee-mid) !important;
-        font-size: 0.88rem !important;
-    }
-
-    /* Number Input */
-    .stNumberInput > div > div > input {
-        border-radius: 14px !important;
-        border: 1.5px solid var(--sand-mid) !important;
-        font-family: 'Nunito', sans-serif !important;
-        color: var(--kaffee) !important;
-    }
-
-    /* Slider */
-    .stSlider [data-baseweb="slider"] [data-baseweb="thumb"] {
-        background: var(--terrakotta) !important;
-    }
-    .stSlider [data-baseweb="slider"] [data-baseweb="track-fill"] {
-        background: var(--terrakotta) !important;
-    }
-
-    /* Multiselect */
-    [data-baseweb="tag"] {
-        background: var(--terra-soft) !important;
-        border-radius: 12px !important;
-    }
-    [data-baseweb="tag"] span { color: #8B3A1E !important; }
-
-    /* Progress bar */
-    .stProgress > div > div > div > div {
-        background: linear-gradient(90deg, var(--salbei), #5A8060) !important;
-        border-radius: 8px !important;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       REZEPTE-HEADER (Tab-Inhalte)
-    ═══════════════════════════════════════════════════════ */
-    .rezepte-header {
-        font-family: 'Lora', serif;
-        font-style: italic;
-        color: var(--kaffee);
-        font-size: 1.3rem;
-        margin: 0 0 1rem 0;
-        padding: 0.6rem 0;
-        border-bottom: 2px dashed var(--sand-mid);
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       DRUCK-MODUS
-    ═══════════════════════════════════════════════════════ */
-    @media print {
-        section[data-testid="stSidebar"],
-        .stButton,
-        [data-testid="stNumberInput"],
-        .stTabs [data-baseweb="tab-list"] { display: none !important; }
-        .stApp { background: white !important; }
-        .stExpander {
-            border: 1px solid #ccc !important;
-            box-shadow: none !important;
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        .hero-header { break-after: avoid; }
-    }
-
-    footer { visibility: hidden; }
-    #MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+#MainMenu { visibility: hidden; }
+[data-testid="stDecoration"] { display: none !important; }
 </style>
-""", unsafe_allow_html=True)
+"""
+
+st.markdown(CSS, unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -758,32 +895,20 @@ def parse_zubereitung_steps(zubereitung_str: str) -> list[str]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# INTELLIGENTE ZUTATEN-NORMALISIERUNG (NEU / VERBESSERT)
-#
-# Der "Zutaten-Cleaner" entfernt via Regex alle Mengenangaben, Einheiten,
-# Bruchteile und Klammerzusätze, bevor eine Zutat verglichen wird.
-# Damit wird "1 Limette" == "Limetten (1-2 Stück)" == "Limette".
+# INTELLIGENTE ZUTATEN-NORMALISIERUNG (unverändert)
 # ══════════════════════════════════════════════════════════════════════════════
-
-# Regex-Muster für Mengen und Einheiten (erweiterbar)
 _MENGE_EINHEIT_PATTERN = re.compile(
     r"""
-    # Bruchzeichen (Unicode): ½ ¼ ¾ etc.
     [½¼¾⅓⅔⅛⅜⅝⅞]
     |
-    # Zahlen mit Bruchstrich: 1/2, 3/4
     \d+\s*/\s*\d+
     |
-    # Zahlenbereiche: 1-2, 3–4
     \d+\s*[-–]\s*\d+
     |
-    # Dezimalzahlen: 1,5 oder 1.5
     \d+[,\.]\d+
     |
-    # Ganze Zahlen
     \d+
     |
-    # Einheiten (Groß-/Kleinschreibung egal)
     \b(?:
         g|kg|mg|
         ml|l|cl|dl|
@@ -808,10 +933,8 @@ _MENGE_EINHEIT_PATTERN = re.compile(
         Scheib\w*
     )\b
     |
-    # Klammerzusätze: (1-2 Stück), (frisch gepresst), (ca. 200g)
     \([^)]*\)
     |
-    # Einleitende Wörter: "ca.", "etwa", "mind."
     \b(?:ca|etwa|mind|max|ungefähr|je)\b\.?
     """,
     re.IGNORECASE | re.VERBOSE,
@@ -819,30 +942,13 @@ _MENGE_EINHEIT_PATTERN = re.compile(
 
 
 def bereinige_zutat(zutat_str: str) -> str:
-    """
-    Entfernt alle Mengen-, Einheits- und Klammerzusätze aus einem Zutatsnamen.
-    Gibt den normalisierten Wortstamm zurück.
-
-    Beispiele:
-        "1 Limette"           → "Limette"
-        "Limetten (1-2 Stück)"→ "Limetten"
-        "200g Parmesan"       → "Parmesan"
-        "½ TL Salz"          → "Salz"
-        "2 EL Olivenöl"       → "Olivenöl"
-        "ca. 3 Zehen Knoblauch" → "Knoblauch"
-    """
     bereinigt = _MENGE_EINHEIT_PATTERN.sub(" ", zutat_str)
-    # Mehrfach-Leerzeichen, Kommas und Satzzeichen am Rand entfernen
     bereinigt = re.sub(r"[,;:\-–\.]+", " ", bereinigt)
     bereinigt = re.sub(r"\s+", " ", bereinigt).strip()
     return bereinigt.lower()
 
 
 def normalisiere_wort(wort: str) -> str:
-    """
-    Reduziert ein deutsches Wort auf seinen wahrscheinlichen Wortstamm,
-    indem gängige Pluralendungen entfernt werden.
-    """
     w = wort.lower().strip()
     for endung in ["nen", "ien", "ern", "chen", "lein", "en", "er", "es", "e", "s"]:
         if w.endswith(endung) and len(w) - len(endung) >= 3:
@@ -851,13 +957,6 @@ def normalisiere_wort(wort: str) -> str:
 
 
 def zutaten_match(rezept_zutat: str, vorhandene_lower: set) -> bool:
-    """
-    Mehrstufige Matching-Strategie mit intelligenter Normalisierung:
-    1. Beide Seiten werden durch den Zutaten-Cleaner bereinigt
-       (Mengen, Einheiten, Klammern entfernt)
-    2. Direkter Teilstring-Vergleich der bereinigten Strings
-    3. Stamm-basierter Vergleich (Singular/Plural)
-    """
     rz_clean = bereinige_zutat(rezept_zutat)
     rz_stamm = normalisiere_wort(rz_clean)
 
@@ -865,12 +964,10 @@ def zutaten_match(rezept_zutat: str, vorhandene_lower: set) -> bool:
         v_clean = bereinige_zutat(v)
         v_stamm = normalisiere_wort(v_clean)
 
-        # Direktes Matching (bereinigt)
         if v_clean and rz_clean:
             if v_clean in rz_clean or rz_clean in v_clean:
                 return True
 
-        # Stamm-Matching (Singular/Plural)
         if len(rz_stamm) >= 3 and len(v_stamm) >= 3:
             if rz_stamm in v_stamm or v_stamm in rz_stamm:
                 return True
@@ -964,12 +1061,7 @@ def kategorisiere_zutat(zutat: str) -> str:
 
 
 def extrahiere_alle_zutaten(df: pd.DataFrame) -> dict:
-    """
-    Extrahiert alle Zutaten aus dem DataFrame und kategorisiert sie.
-    Nutzt den Zutaten-Cleaner, um normalisierte Zutaten-Namen zu erhalten,
-    und gruppiert Duplikate (z.B. "1 Limette" und "Limetten") zusammen.
-    """
-    zutaten_map: dict[str, str] = {}  # normalisiert → Original-Anzeigename
+    zutaten_map: dict[str, str] = {}
 
     for zutaten_str in df["Benötigte Zutaten"].dropna():
         items = [z.strip() for z in str(zutaten_str).replace("\n", ",").split(",") if z.strip()]
@@ -980,14 +1072,10 @@ def extrahiere_alle_zutaten(df: pd.DataFrame) -> dict:
             stamm = normalisiere_wort(clean)
             if len(clean) < 2:
                 continue
-            # Verwende den kürzesten / saubersten Namen als Anzeigenamen
             if stamm not in zutaten_map:
-                # Wähle den bereinigten (ohne Mengen) Original-Text als Label
-                # Kapitalisierung: ersten Buchstaben groß
                 anzeige = clean.strip().capitalize()
                 zutaten_map[stamm] = anzeige
 
-    # Kategorisiere nach Anzeigenamen
     kategorisiert: dict[str, list[str]] = {}
     for stamm, anzeige in sorted(zutaten_map.items(), key=lambda x: x[1]):
         kat = kategorisiere_zutat(anzeige)
@@ -1000,10 +1088,6 @@ def extrahiere_alle_zutaten(df: pd.DataFrame) -> dict:
 
 
 def berechne_matches(df: pd.DataFrame, vorhandene_zutaten: set) -> pd.DataFrame:
-    """
-    Verbesserte Matching-Logik mit intelligenter Normalisierung.
-    Nutzt bereinige_zutat() für Mengen-unabhängigen Vergleich.
-    """
     if not vorhandene_zutaten:
         return pd.DataFrame()
 
@@ -1075,7 +1159,6 @@ def aufwand_class(aufwand: str) -> str:
 
 
 def toggle_favorit(name: str):
-    """Fügt ein Rezept zu Favoriten hinzu oder entfernt es."""
     if name in st.session_state.favoriten:
         st.session_state.favoriten.discard(name)
     else:
@@ -1085,6 +1168,7 @@ def toggle_favorit(name: str):
 def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
     """
     Zentrale Funktion zum Rendern einer Rezeptkarte im Kochbuch-Stil.
+    Identische Logik wie Original – nur Darstellung aufgewertet.
     """
     name        = row.get("Name des Gerichts", "Unbekannt")
     zeit        = row.get("Benötigte Zeit", 0)
@@ -1101,22 +1185,22 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
     fav_icon    = "❤️" if ist_favorit else "🤍"
     fav_badge   = '<span class="fav-badge">❤️ Favorit</span> ' if ist_favorit else ""
 
-    # Badges zusammenbauen
     badges = fav_badge
     if kategorie:
-        badges += f'<span class="badge badge-kategorie">{kategorie}</span>'
+        badges += f'<span class="badge badge-kategorie">{kategorie}</span> '
     if ernaehrung:
-        badges += f'<span class="badge badge-ernaehrung">{ernaehrung}</span>'
+        badges += f'<span class="badge badge-ernaehrung">{ernaehrung}</span> '
     if saison:
-        badges += f'<span class="badge badge-saison">{saison}</span>'
+        badges += f'<span class="badge badge-saison">{saison}</span> '
     if aufwand:
         badges += f'<span class="badge {aufwand_class(aufwand)}">{aufwand}</span>'
 
     expander_label = f"{'❤️ ' if ist_favorit else '🥘 '}{name}  ·  ⏱ {zeit} min"
 
     with st.expander(expander_label, expanded=False):
+        # Badges Zeile
         st.markdown(badges, unsafe_allow_html=True)
-        st.markdown("")
+        st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
 
         # ── Favoriten-Button ──────────────────────────────────────────────
         fav_col, _ = st.columns([1, 5])
@@ -1253,9 +1337,9 @@ if df.empty:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# HERO HEADER
+# HERO HEADER – Screenshot-getreue Terrakotta-Leiste
 # ══════════════════════════════════════════════════════════════════════════════
-avg_zeit = int(df["Benötigte Zeit"].mean()) if not df.empty else 0
+avg_zeit  = int(df["Benötigte Zeit"].mean()) if not df.empty else 0
 n_rezepte = len(df)
 n_fav     = len(st.session_state.favoriten)
 
@@ -1270,7 +1354,7 @@ st.markdown(f"""
         </div>
         <div class="hero-stat">
             <span class="hero-stat-number">{avg_zeit}</span>
-            <span class="hero-stat-label">Ø Minuten</span>
+            <span class="hero-stat-label">Ø Min</span>
         </div>
         <div class="hero-stat">
             <span class="hero-stat-number">{n_fav}</span>
@@ -1323,8 +1407,8 @@ with tab1:
 
         st.markdown("---")
         st.markdown("""
-        <div style="color:#F5E6D3; font-size:0.8rem; opacity:0.75; line-height:1.6;">
-        🖨️ <strong>Druck-Tipp:</strong><br>
+        <div style="color:rgba(240,224,204,0.65); font-size:0.78rem; line-height:1.65;">
+        🖨️ <strong style="color:rgba(240,224,204,0.85)">Druck-Tipp:</strong><br>
         Strg+P öffnet den Druckdialog.<br>
         Layout ist für DIN-A4 optimiert.
         </div>
@@ -1364,7 +1448,7 @@ with tab1:
     with col4:
         st.metric("🌿 Ernährungsformen", filtered["Ernährungsform"].nunique())
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<div style='height:1.2rem'></div>", unsafe_allow_html=True)
 
     # ── Rezepte anzeigen ──────────────────────────────────────────────────
     if filtered.empty:
@@ -1388,7 +1472,7 @@ with tab1:
 # ════════════════════════════════════════════════════════════════════════════
 with tab2:
     st.markdown("""
-    <div class="zutat-check-header" style="background: linear-gradient(135deg,#FFEAE8,#FFCDD0); border-color:#FFAAB0;">
+    <div class="zutat-check-header" style="background: linear-gradient(135deg,#FFEAE8,#FFDAD8); border-color:rgba(240,168,152,0.4);">
         <h2>❤️ Meine Lieblingsrezepte</h2>
         <p>Alle mit dem Herz markierten Rezepte – für diese Sitzung gespeichert.</p>
     </div>
@@ -1410,7 +1494,7 @@ with tab2:
         for idx, (_, row) in enumerate(fav_df.iterrows()):
             rendere_rezept_karte(row, idx_key=f"tab2_{idx}")
 
-        st.markdown("---")
+        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
         if st.button("❌ Alle Favoriten löschen"):
             st.session_state.favoriten = set()
             st.rerun()
@@ -1425,7 +1509,8 @@ with tab3:
         <h2>🛒 Was hab ich im Kühlschrank?</h2>
         <p>
             Wähle deine vorhandenen Zutaten – das Kochbuch zeigt dir, was du kochen kannst.<br>
-            <strong>Mengenangaben werden automatisch ignoriert:</strong> „1 Limette" und „Limetten (2 Stück)" werden als dieselbe Zutat erkannt.
+            <strong>Mengenangaben werden automatisch ignoriert:</strong>
+            „1 Limette" und „Limetten (2 Stück)" werden als dieselbe Zutat erkannt.
             Gewürze und Grundzutaten werden ausgeblendet.
         </p>
     </div>
@@ -1503,7 +1588,7 @@ with tab3:
             " ".join([f'<span class="zutat-tag">{z}</span>' for z in sorted(vorhandene_zutaten)]),
             unsafe_allow_html=True,
         )
-        st.markdown("")
+        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
 
     st.markdown('<p class="rezepte-header">🍳 Passende Rezepte</p>', unsafe_allow_html=True)
 
