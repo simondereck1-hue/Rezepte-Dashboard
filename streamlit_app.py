@@ -332,30 +332,6 @@ h1, h2, h3, h4 {
     margin: 0.1rem 0 0;
 }
 
-/* ── NEU v3: Flavor-Pairing-Box in Rezeptkarten ─────────────────────────── */
-.flavor-box {
-    background: linear-gradient(135deg, #F0EAF8, #E8DEFE);
-    border: 1.5px solid rgba(120,80,200,0.2);
-    border-left: 5px solid #9B72D0;
-    border-radius: var(--radius-md);
-    padding: 0.9rem 1.2rem;
-    margin-top: 0.8rem;
-}
-.flavor-box-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 0.85rem;
-    font-weight: 700;
-    font-style: italic;
-    color: #4A2880;
-    margin: 0 0 0.28rem 0;
-}
-.flavor-box-text {
-    font-size: 0.85rem;
-    color: #3A2060;
-    line-height: 1.65;
-    margin: 0;
-    font-family: 'Lato', sans-serif;
-}
 
 /* ── NEU v3: Inspirations-Kacheln (leerer Zustand) ─────────────────────── */
 .inspiration-grid {
@@ -454,6 +430,8 @@ h1, h2, h3, h4 {
 
 /* ═══════════════════════════════════════════════════════════════
    REZEPT-KARTE (Expander)
+   FIX v4: Expander geöffnet → Hintergrund & Text immer hell/dunkel,
+           verhindert dunklen Streamlit-Dark-Mode-Header-Bug
 ═══════════════════════════════════════════════════════════════ */
 .stExpander {
     background-color: var(--weiss) !important;
@@ -470,21 +448,52 @@ h1, h2, h3, h4 {
     box-shadow: var(--shadow-hover) !important;
     transform: translateY(-2px) !important;
 }
-.stExpander summary {
+/* Summary – geschlossen UND geöffnet immer heller Hintergrund */
+.stExpander summary,
+.stExpander summary[aria-expanded="true"],
+.stExpander details[open] > summary {
     padding: 1.05rem 1.5rem !important;
+    background-color: var(--weiss) !important;
     transition: background-color 0.22s ease !important;
     border-radius: var(--radius-lg) !important;
+    color: var(--text-d) !important;
 }
-.stExpander summary:hover {
+.stExpander summary:hover,
+.stExpander summary[aria-expanded="true"]:hover {
     background-color: var(--sand-hell) !important;
 }
-.stExpander summary p {
+/* Expander-Titel-Text immer dunkel, egal ob auf/zu */
+.stExpander summary p,
+.stExpander summary[aria-expanded="true"] p,
+.stExpander summary span,
+.stExpander summary[aria-expanded="true"] span,
+.stExpander summary svg {
     color: var(--text-d) !important;
+    fill: var(--text-d) !important;
     font-weight: 700 !important;
     font-size: 1rem !important;
     font-family: 'Lato', sans-serif !important;
 }
+/* Favoriten-Button innerhalb Expander – dunkler Text auf hellem BG */
+.stExpander .stButton > button {
+    background: var(--weiss) !important;
+    color: var(--text-d) !important;
+    border-color: var(--sand-mid) !important;
+}
+.stExpander .stButton > button:hover {
+    background: var(--terra-soft) !important;
+    color: var(--terra) !important;
+    border-color: var(--terra) !important;
+}
+/* Number Input innerhalb Expander – immer heller Hintergrund */
+.stExpander [data-testid="stNumberInput"] input,
+.stExpander [data-testid="stNumberInput"] button {
+    background: var(--weiss) !important;
+    color: var(--text-d) !important;
+    border-color: var(--sand-mid) !important;
+}
 .stExpander [data-testid="stExpanderDetails"] {
+    background-color: var(--weiss) !important;
     padding: 0.8rem 1.6rem 1.5rem 1.6rem !important;
 }
 .stExpander [data-testid="stExpanderDetails"] p,
@@ -1334,29 +1343,6 @@ def get_saison() -> tuple[str, str, str]:
     else:
         return "Winter", "❄️", "winter"
 
-# Flavor-Pairing-Tipps je nach Kategorie
-FLAVOR_PAIRING_TIPPS: dict[str, str] = {
-    "🥩 Fleisch":       "Rotes Fleisch liebt Rosmarin, Knoblauch & einen Schuss Rotwein. Karamellisiere die Oberfläche scharf an – der Maillard-Effekt ist dein bester Freund.",
-    "Suppe":            "Tiefe bekommt eine Suppe durch langes Rösten der Zwiebeln und ein Lorbeerblatt. Frische kommt erst am Ende – mit Zitrone oder frischen Kräutern.",
-    "Pasta":            "Pasta-Wasser ist flüssiges Gold: stärkehaltig und salzig perfektioniert es jede Sauce. Immer etwas aufbewahren!",
-    "Salat":            "Ein gutes Dressing braucht die Balance aus Säure, Fett und Süße. Probiere: Balsamico + Olivenöl + ein Hauch Honig.",
-    "Fisch":            "Fisch verträgt keine lange Hitze. Gare ihn lieber 1 Minute weniger – er zieht im Ruhezustand noch nach. Zitronenschale verstärkt den Meeresgeschmack ohne Säure.",
-    "Vegetarisch":      "Umami ohne Fleisch gelingt durch Miso, geröstete Pilze, Parmesan oder Tomatenmark. Diese Zutaten sind natürliche Geschmacksverstärker.",
-    "Vegan":            "Kokosöl brät wunderbar heiß. Hefeflocken bringen den käsigen Umami-Kick in vegane Gerichte – probiere es auf Pasta oder Popcorn.",
-    "Suess":            "Salz im Dessert ist kein Fehler – es hebt die Süße hervor. Eine Prise Fleur de Sel auf Schokolade oder Karamell ist Magie.",
-    "Standard":         "Frische Kräuter erst am Ende hinzufügen. Hitze zerstört die flüchtigen Aromen – Basilikum, Petersilie und Minze entfalten sich nur roh.",
-}
-
-def get_flavor_pairing(row: pd.Series) -> str:
-    """Wählt den passenden Flavor-Pairing-Tipp basierend auf Kategorie / Ernährungsform."""
-    kategorie  = str(row.get("Kategorie", "")).strip()
-    ernaehrung = str(row.get("Ernährungsform", "")).strip()
-    name       = str(row.get("Name des Gerichts", "")).lower()
-
-    for key, tipp in FLAVOR_PAIRING_TIPPS.items():
-        if key.lower() in kategorie.lower() or key.lower() in ernaehrung.lower() or key.lower() in name:
-            return tipp
-    return FLAVOR_PAIRING_TIPPS["Standard"]
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1541,16 +1527,6 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
                 <p class="tipp-box-text">{tipps}</p>
             </div>
             """, unsafe_allow_html=True)
-
-        # ── NEU v3: Flavor-Pairing-Tipp (lila Box) ───────────────────────
-        # Zeigt ein kulinarisches Wissens-Nugget basierend auf Kategorie/Ernährungsform
-        flavor_tipp = get_flavor_pairing(row)
-        st.markdown(f"""
-        <div class="flavor-box">
-            <p class="flavor-box-title">🍷 Flavor-Pairing Wissen</p>
-            <p class="flavor-box-text">{flavor_tipp}</p>
-        </div>
-        """, unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1930,45 +1906,130 @@ with tab3:
                     unsafe_allow_html=True,
                 )
                 for idx, (_, match) in enumerate(vollstaendig.iterrows()):
-                    row            = match["row"]
-                    name           = row.get("Name des Gerichts", "Unbekannt")
-                    zeit           = row.get("Benötigte Zeit", 0)
-                    vorhanden      = match["vorhanden"]
-                    anzahl_gesamt  = match["anzahl_gesamt"]
-                    zutat_tags     = " ".join([f'<span class="zutat-tag">{z}</span>' for z in vorhanden])
+                    row           = match["row"]
+                    name          = row.get("Name des Gerichts", "Unbekannt")
+                    zeit          = row.get("Benötigte Zeit", 0)
+                    vorhanden     = match["vorhanden"]
+                    anzahl_gesamt = match["anzahl_gesamt"]
+                    zutat_tags    = " ".join([f'<span class="zutat-tag">{z}</span>' for z in vorhanden])
 
+                    # Vollständige Karte: nutzt die zentrale rendere_rezept_karte,
+                    # erweitert mit dem "Alle Zutaten vorhanden"-Badge oben
                     with st.expander(f"✅ {name}  ·  ⏱ {zeit} min", expanded=False):
                         st.markdown(
                             f'<span class="match-badge-full">Alle {anzahl_gesamt} Zutaten vorhanden 🎉</span>',
                             unsafe_allow_html=True,
                         )
-                        st.markdown("")
-                        st.markdown('<div class="section-label">🧂 Zutaten (alle vorhanden)</div>', unsafe_allow_html=True)
+                        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+                        st.markdown('<div class="section-label">🧂 Vorhandene Zutaten</div>', unsafe_allow_html=True)
                         st.markdown(zutat_tags, unsafe_allow_html=True)
-                        st.markdown("")
+                        st.markdown("---")
 
+                        # Badges (Kategorie, Ernährungsform, Saison, Aufwand)
+                        aufwand    = row.get("Aufwand", "")
+                        kategorie  = row.get("Kategorie", "")
+                        ernaehrung = row.get("Ernährungsform", "")
+                        saison     = row.get("Saison-Check", "")
+                        equipment  = row.get("Equipment", "")
+                        zutaten    = row.get("Benötigte Zutaten", "")
                         zubereitung = row.get("Zubereitung", "")
-                        if zubereitung:
-                            st.markdown('<div class="section-label">👨‍🍳 Zubereitung</div>', unsafe_allow_html=True)
-                            steps = parse_zubereitung_steps(zubereitung)
-                            if len(steps) > 1:
-                                key = f"match_steps_{name}"
-                                if key not in st.session_state.completed_steps:
-                                    st.session_state.completed_steps[key] = set()
-                                done = st.session_state.completed_steps[key]
-                                if done:
-                                    st.progress(len(done)/len(steps), text=f"{len(done)}/{len(steps)} erledigt")
-                                for i, step in enumerate(steps):
-                                    checked = st.checkbox(step, value=(i in done), key=f"mstep_{idx}_{i}")
-                                    if checked:
-                                        done.add(i)
-                                    else:
-                                        done.discard(i)
-                            else:
-                                for step in steps:
-                                    st.markdown(step)
+                        tipps      = row.get("Koch-Tipps", "") if "Koch-Tipps" in row.index else ""
+                        ist_favorit = name in st.session_state.favoriten
+                        fav_icon    = "❤️" if ist_favorit else "🤍"
 
-                        tipps = row.get("Koch-Tipps", "") if "Koch-Tipps" in row.index else ""
+                        badges = '<span class="fav-badge">❤️ Favorit</span> ' if ist_favorit else ""
+                        if kategorie:
+                            badges += f'<span class="badge badge-kategorie">{kategorie}</span> '
+                        if ernaehrung:
+                            badges += f'<span class="badge badge-ernaehrung">{ernaehrung}</span> '
+                        if saison:
+                            badges += f'<span class="badge badge-saison">{saison}</span> '
+                        if aufwand:
+                            badges += f'<span class="badge {aufwand_class(aufwand)}">{aufwand}</span>'
+                        if badges:
+                            st.markdown(badges, unsafe_allow_html=True)
+                            st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
+
+                        # Favoriten-Button
+                        fav_col, _ = st.columns([1, 5])
+                        with fav_col:
+                            if st.button(
+                                f"{fav_icon} {'Entfernen' if ist_favorit else 'Favorit'}",
+                                key=f"fav_match_{idx}_{name}",
+                                use_container_width=True,
+                            ):
+                                toggle_favorit(name)
+                                st.rerun()
+
+                        st.markdown("---")
+
+                        # Portionsrechner
+                        base_portionen = int(row.get("Portionen", 4)) if "Portionen" in row.index else 4
+                        if base_portionen == 0:
+                            base_portionen = 4
+                        if zutaten:
+                            port_col1, port_col2 = st.columns([2, 4])
+                            with port_col1:
+                                neue_portionen = st.number_input(
+                                    "🍽️ Portionen",
+                                    min_value=1, max_value=20, value=base_portionen, step=1,
+                                    key=f"portionen_match_{idx}_{name}",
+                                )
+                            faktor = neue_portionen / base_portionen
+                            with port_col2:
+                                if faktor != 1.0:
+                                    st.info(f"Faktor: ×{faktor:.2f} – Mengen auf **{neue_portionen} Portionen** umgerechnet", icon="🔢")
+                        else:
+                            faktor = 1.0
+
+                        # Zutaten + Zubereitung nebeneinander
+                        col_l, col_r = st.columns([1, 2])
+                        with col_l:
+                            st.markdown('<div class="section-label">🧂 Alle Zutaten</div>', unsafe_allow_html=True)
+                            if zutaten:
+                                items = [z.strip() for z in str(zutaten).replace("\n", ",").split(",") if z.strip()]
+                                grid_html = '<div class="zutat-grid">'
+                                for item in items:
+                                    item_skaliert = skaliere_zutat(item, faktor) if faktor != 1.0 else item
+                                    menge, zutat_name = parse_zutat_display(item_skaliert)
+                                    if menge:
+                                        grid_html += f'<div class="zutat-item"><span class="zutat-menge">{menge}</span><span class="zutat-name">{zutat_name}</span></div>'
+                                    else:
+                                        grid_html += f'<div class="zutat-item"><span class="zutat-name">{zutat_name}</span></div>'
+                                grid_html += '</div>'
+                                st.markdown(grid_html, unsafe_allow_html=True)
+                            else:
+                                st.markdown("_Keine Zutaten angegeben_")
+                            if equipment:
+                                st.markdown('<div class="section-label">🔧 Equipment</div>', unsafe_allow_html=True)
+                                for eq in [e.strip() for e in str(equipment).replace("\n", ",").split(",") if e.strip()]:
+                                    st.markdown(f"• {eq}")
+
+                        with col_r:
+                            st.markdown('<div class="section-label">👨‍🍳 Zubereitung</div>', unsafe_allow_html=True)
+                            if zubereitung:
+                                steps = parse_zubereitung_steps(zubereitung)
+                                if len(steps) > 1:
+                                    key = f"match_steps_{name}"
+                                    if key not in st.session_state.completed_steps:
+                                        st.session_state.completed_steps[key] = set()
+                                    done = st.session_state.completed_steps[key]
+                                    if done:
+                                        st.progress(len(done)/len(steps), text=f"{len(done)}/{len(steps)} erledigt")
+                                    for i, step in enumerate(steps):
+                                        checked = st.checkbox(step, value=(i in done), key=f"mstep_{idx}_{i}")
+                                        if checked: done.add(i)
+                                        else: done.discard(i)
+                                    if done:
+                                        if st.button("🔄 Fortschritt zurücksetzen", key=f"reset_match_{idx}_{name}"):
+                                            st.session_state.completed_steps[key] = set()
+                                            st.rerun()
+                                else:
+                                    for step in steps:
+                                        st.markdown(step)
+                            else:
+                                st.markdown("_Keine Zubereitung angegeben_")
+
                         if tipps and tipps.strip():
                             st.markdown(f"""
                             <div class="tipp-box">
@@ -1998,7 +2059,7 @@ with tab3:
                 if partiell_gefiltert.empty:
                     st.info(f"Keine Rezepte mit mindestens {min_anteil}% der Zutaten vorhanden.")
                 else:
-                    for _, match in partiell_gefiltert.iterrows():
+                    for p_idx, (_, match) in enumerate(partiell_gefiltert.iterrows()):
                         row              = match["row"]
                         name             = row.get("Name des Gerichts", "Unbekannt")
                         zeit             = row.get("Benötigte Zeit", 0)
@@ -2019,7 +2080,9 @@ with tab3:
                                 f'<span class="match-badge-partial">{anzahl_vorhanden} von {anzahl_gesamt} Zutaten ({anteil_pct}%)</span>',
                                 unsafe_allow_html=True,
                             )
-                            st.markdown("")
+                            st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+
+                            # Vorhanden / Fehlend Status
                             col_v, col_f = st.columns(2)
                             with col_v:
                                 st.markdown('<div class="section-label">✅ Vorhanden</div>', unsafe_allow_html=True)
@@ -2027,3 +2090,114 @@ with tab3:
                             with col_f:
                                 st.markdown('<div class="section-label">❌ Noch kaufen</div>', unsafe_allow_html=True)
                                 st.markdown(fehlend_tags if fehlend_tags else "_–_", unsafe_allow_html=True)
+
+                            st.markdown("---")
+
+                            # Alle weiteren Infos (Badges, Favorit, Portionen, Zutaten, Zubereitung, Tipps)
+                            aufwand    = row.get("Aufwand", "")
+                            kategorie  = row.get("Kategorie", "")
+                            ernaehrung = row.get("Ernährungsform", "")
+                            saison     = row.get("Saison-Check", "")
+                            equipment  = row.get("Equipment", "")
+                            zutaten    = row.get("Benötigte Zutaten", "")
+                            zubereitung = row.get("Zubereitung", "")
+                            tipps      = row.get("Koch-Tipps", "") if "Koch-Tipps" in row.index else ""
+                            ist_favorit = name in st.session_state.favoriten
+                            fav_icon    = "❤️" if ist_favorit else "🤍"
+
+                            badges = '<span class="fav-badge">❤️ Favorit</span> ' if ist_favorit else ""
+                            if kategorie:
+                                badges += f'<span class="badge badge-kategorie">{kategorie}</span> '
+                            if ernaehrung:
+                                badges += f'<span class="badge badge-ernaehrung">{ernaehrung}</span> '
+                            if saison:
+                                badges += f'<span class="badge badge-saison">{saison}</span> '
+                            if aufwand:
+                                badges += f'<span class="badge {aufwand_class(aufwand)}">{aufwand}</span>'
+                            if badges:
+                                st.markdown(badges, unsafe_allow_html=True)
+
+                            fav_col2, _ = st.columns([1, 5])
+                            with fav_col2:
+                                if st.button(
+                                    f"{fav_icon} {'Entfernen' if ist_favorit else 'Favorit'}",
+                                    key=f"fav_partiell_{p_idx}_{name}",
+                                    use_container_width=True,
+                                ):
+                                    toggle_favorit(name)
+                                    st.rerun()
+
+                            st.markdown("---")
+
+                            base_portionen = int(row.get("Portionen", 4)) if "Portionen" in row.index else 4
+                            if base_portionen == 0:
+                                base_portionen = 4
+                            if zutaten:
+                                port_col1, port_col2 = st.columns([2, 4])
+                                with port_col1:
+                                    neue_portionen = st.number_input(
+                                        "🍽️ Portionen",
+                                        min_value=1, max_value=20, value=base_portionen, step=1,
+                                        key=f"portionen_partiell_{p_idx}_{name}",
+                                    )
+                                faktor = neue_portionen / base_portionen
+                                with port_col2:
+                                    if faktor != 1.0:
+                                        st.info(f"Faktor: ×{faktor:.2f} – Mengen auf **{neue_portionen} Portionen** umgerechnet", icon="🔢")
+                            else:
+                                faktor = 1.0
+
+                            col_l2, col_r2 = st.columns([1, 2])
+                            with col_l2:
+                                st.markdown('<div class="section-label">🧂 Alle Zutaten</div>', unsafe_allow_html=True)
+                                if zutaten:
+                                    items = [z.strip() for z in str(zutaten).replace("\n", ",").split(",") if z.strip()]
+                                    grid_html = '<div class="zutat-grid">'
+                                    for item in items:
+                                        item_skaliert = skaliere_zutat(item, faktor) if faktor != 1.0 else item
+                                        menge, zutat_name = parse_zutat_display(item_skaliert)
+                                        if menge:
+                                            grid_html += f'<div class="zutat-item"><span class="zutat-menge">{menge}</span><span class="zutat-name">{zutat_name}</span></div>'
+                                        else:
+                                            grid_html += f'<div class="zutat-item"><span class="zutat-name">{zutat_name}</span></div>'
+                                    grid_html += '</div>'
+                                    st.markdown(grid_html, unsafe_allow_html=True)
+                                else:
+                                    st.markdown("_Keine Zutaten angegeben_")
+                                if equipment:
+                                    st.markdown('<div class="section-label">🔧 Equipment</div>', unsafe_allow_html=True)
+                                    for eq in [e.strip() for e in str(equipment).replace("\n", ",").split(",") if e.strip()]:
+                                        st.markdown(f"• {eq}")
+
+                            with col_r2:
+                                st.markdown('<div class="section-label">👨‍🍳 Zubereitung</div>', unsafe_allow_html=True)
+                                if zubereitung:
+                                    steps = parse_zubereitung_steps(zubereitung)
+                                    if len(steps) > 1:
+                                        key2 = f"partiell_steps_{name}"
+                                        if key2 not in st.session_state.completed_steps:
+                                            st.session_state.completed_steps[key2] = set()
+                                        done2 = st.session_state.completed_steps[key2]
+                                        if done2:
+                                            st.progress(len(done2)/len(steps), text=f"{len(done2)}/{len(steps)} erledigt")
+                                        for i, step in enumerate(steps):
+                                            checked = st.checkbox(step, value=(i in done2), key=f"pstep_{p_idx}_{i}")
+                                            if checked: done2.add(i)
+                                            else: done2.discard(i)
+                                        if done2:
+                                            if st.button("🔄 Fortschritt zurücksetzen", key=f"reset_partiell_{p_idx}_{name}"):
+                                                st.session_state.completed_steps[key2] = set()
+                                                st.rerun()
+                                    else:
+                                        for step in steps:
+                                            st.markdown(step)
+                                else:
+                                    st.markdown("_Keine Zubereitung angegeben_")
+
+                            if tipps and tipps.strip():
+                                st.markdown(f"""
+                                <div class="tipp-box">
+                                    <p class="tipp-box-title">💡 Chef's Tipp</p>
+                                    <p class="tipp-box-text">{tipps}</p>
+                                </div>
+                                """, unsafe_allow_html=True)
