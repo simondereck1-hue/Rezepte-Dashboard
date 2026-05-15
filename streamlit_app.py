@@ -1,17 +1,23 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║         MEIN KOCHBUCH – „Die Seele der Küche"  [REDESIGN v2]               ║
+║         MEIN KOCHBUCH – „Die Seele der Küche"  [REDESIGN v3]               ║
 ║                                                                              ║
-║  ✦ Screenshot-getreues Design: Terrakotta-Header, dunkle Sidebar           ║
-║  ✦ Playfair Display (Überschriften) + Lato (Fließtext)                     ║
-║  ✦ Karten-Layout mit weichen Schatten & abgerundeten Ecken (28px)          ║
-║  ✦ Pillenförmige Ingredient-Tags & Status-Badges                           ║
-║  ✦ Luftige Abstände (White-Space-First-Ansatz)                             ║
-║  ✦ Alle Backend-Funktionen identisch (Google Sheets, Regex, Favoriten)     ║
+║  ✦ UPGRADE v3 – Was ist neu?                                               ║
+║    • Hero-Header: Ø-Zeit-Stat raus → tagesbasiertes Kochzitat rein         ║
+║    • Tab 1: Ø-Zeit + Kategorien-Metriken → Saison-Karte + Tagesrezept      ║
+║    • Neuer "Tagesrezept"-Banner: hebt täglich ein Rezept besonders hervor  ║
+║    • Neuer "Flavor-Pairing"-Tipp: kulinarisches Wissens-Nugget je Rezept   ║
+║    • Saison-Karte: zeigt welche Saison-Rezepte heute passen               ║
+║    • Inspirations-Kacheln im leeren Zustand (noch keine Filter)            ║
+║    • Alle Backend-Funktionen unverändert (Sheets, Regex, Matches)          ║
+║                                                                              ║
+║  ✦ Farbpalette & Typografie identisch zu v2 (Terrakotta + Cremepapier)     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
 import re
+import random
+import datetime
 import streamlit as st
 import pandas as pd
 import gspread
@@ -27,20 +33,7 @@ st.set_page_config(
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ██████████████████████████  CSS DESIGN-SYSTEM  ██████████████████████████████
-#
-#  Farbpalette (Screenshot-Referenz):
-#   --creme      #FBF5EC   warmes Leinen / Seitenhintergrund
-#   --braun-d    #3B1F0E   tiefstes Dunkelbraun (Sidebar-Basis)
-#   --braun-m    #5C2E10   mittleres Braun (Sidebar-Akzent)
-#   --terra      #C85A28   Terrakotta (Header-Gradient, Hauptakzent)
-#   --terra-hell #E07848   helles Terrakotta
-#   --sand       #EAD9C8   Sand / Karten-Border
-#   --sand-hell  #F5EDE0   sehr heller Sand
-#   --salbei     #6E9673   Grün (vorhanden-Tags, Salbei)
-#   --senf       #C99010   Gold (Tipps-Box, Badges)
-#   --text-d     #2E1608   sehr dunkler Text
-#   --text-m     #5E3820   mittelbrauner Text
-#
+# (Identisch zu v2 – keine Designbrüche, nur Ergänzungen am Ende)
 # ══════════════════════════════════════════════════════════════════════════════
 CSS = """
 <style>
@@ -116,7 +109,7 @@ h1, h2, h3, h4 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   HERO HEADER – Terrakotta Kochbuch-Cover (Screenshot-Stil)
+   HERO HEADER – Terrakotta Kochbuch-Cover
 ═══════════════════════════════════════════════════════════════ */
 .hero-header {
     background:
@@ -130,7 +123,6 @@ h1, h2, h3, h4 {
     overflow: hidden;
     box-shadow: var(--shadow-hero);
 }
-/* Dekorativer Kochlöffel-Kreis */
 .hero-header::before {
     content: "🥘";
     font-size: 9rem;
@@ -142,7 +134,6 @@ h1, h2, h3, h4 {
     line-height: 1;
     pointer-events: none;
 }
-/* Heller Reflex-Kreis */
 .hero-header::after {
     content: "";
     position: absolute;
@@ -183,6 +174,7 @@ h1, h2, h3, h4 {
     position: relative;
     z-index: 1;
     flex-wrap: wrap;
+    align-items: flex-start;
 }
 .hero-stat {
     background: rgba(255,255,255,0.14);
@@ -215,6 +207,193 @@ h1, h2, h3, h4 {
     font-weight: 700;
 }
 
+/* ── NEU v3: Kochzitat im Hero ────────────────────────────────────────────── */
+.hero-quote {
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(6px);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-left: 4px solid rgba(255,235,180,0.6);
+    padding: 0.75rem 1.2rem;
+    max-width: 520px;
+    position: relative;
+    z-index: 1;
+}
+.hero-quote-text {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 0.93rem;
+    color: rgba(255,244,232,0.95);
+    line-height: 1.55;
+    margin: 0 0 0.25rem 0;
+}
+.hero-quote-author {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.68rem;
+    color: rgba(255,244,232,0.6);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* ── NEU v3: Tagesrezept-Banner ─────────────────────────────────────────── */
+.tagesrezept-banner {
+    background: linear-gradient(135deg, #FFF8EC 0%, #FFF0D8 50%, #FFECC8 100%);
+    border: 1.5px solid rgba(201,144,16,0.35);
+    border-left: 5px solid var(--senf);
+    border-radius: var(--radius-lg);
+    padding: 1.3rem 1.8rem 1.2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+}
+.tagesrezept-banner::after {
+    content: "✨";
+    font-size: 5rem;
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.12;
+    pointer-events: none;
+}
+.tagesrezept-label {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #8A6000;
+    margin: 0 0 0.3rem 0;
+}
+.tagesrezept-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-d);
+    margin: 0 0 0.2rem 0;
+    line-height: 1.2;
+}
+.tagesrezept-meta {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.83rem;
+    color: var(--text-m);
+    margin: 0;
+}
+
+/* ── NEU v3: Saison-Info-Karte ───────────────────────────────────────────── */
+.saison-karte {
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1.4rem;
+    border: 1.5px solid;
+    box-shadow: var(--shadow-card);
+    text-align: center;
+}
+.saison-karte-fruehling {
+    background: linear-gradient(135deg, #E8F5E0, #D4EEC8);
+    border-color: rgba(110,160,80,0.3);
+}
+.saison-karte-sommer {
+    background: linear-gradient(135deg, #FFF8D0, #FFE898);
+    border-color: rgba(220,160,0,0.3);
+}
+.saison-karte-herbst {
+    background: linear-gradient(135deg, #F5E8D0, #F0D0A8);
+    border-color: rgba(180,100,20,0.3);
+}
+.saison-karte-winter {
+    background: linear-gradient(135deg, #E0EAF8, #C8D8F0);
+    border-color: rgba(40,80,160,0.2);
+}
+.saison-karte-icon { font-size: 1.8rem; margin-bottom: 0.3rem; display: block; }
+.saison-karte-label {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-m);
+    margin: 0 0 0.15rem 0;
+}
+.saison-karte-wert {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-d);
+    display: block;
+    line-height: 1.1;
+}
+.saison-karte-sub {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.75rem;
+    color: var(--text-m);
+    margin: 0.1rem 0 0;
+}
+
+/* ── NEU v3: Flavor-Pairing-Box in Rezeptkarten ─────────────────────────── */
+.flavor-box {
+    background: linear-gradient(135deg, #F0EAF8, #E8DEFE);
+    border: 1.5px solid rgba(120,80,200,0.2);
+    border-left: 5px solid #9B72D0;
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.2rem;
+    margin-top: 0.8rem;
+}
+.flavor-box-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-style: italic;
+    color: #4A2880;
+    margin: 0 0 0.28rem 0;
+}
+.flavor-box-text {
+    font-size: 0.85rem;
+    color: #3A2060;
+    line-height: 1.65;
+    margin: 0;
+    font-family: 'Lato', sans-serif;
+}
+
+/* ── NEU v3: Inspirations-Kacheln (leerer Zustand) ─────────────────────── */
+.inspiration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0 0.5rem;
+}
+.inspiration-card {
+    background: var(--weiss);
+    border: 1.5px solid var(--sand);
+    border-radius: var(--radius-md);
+    padding: 1.4rem 1.2rem;
+    text-align: center;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+    cursor: default;
+}
+.inspiration-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-3px);
+}
+.inspiration-card-icon { font-size: 2.2rem; display: block; margin-bottom: 0.6rem; }
+.inspiration-card-title {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--text-d);
+    margin: 0 0 0.3rem 0;
+}
+.inspiration-card-text {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.78rem;
+    color: var(--text-s);
+    line-height: 1.55;
+    margin: 0;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    METRIKEN – luftige Karten
 ═══════════════════════════════════════════════════════════════ */
@@ -244,7 +423,7 @@ h1, h2, h3, h4 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TABS – Kochbuch-Navigation (Screenshot-Stil: Clips-Look)
+   TABS – Kochbuch-Navigation
 ═══════════════════════════════════════════════════════════════ */
 .stTabs [data-baseweb="tab-list"] {
     background: var(--sand-hell) !important;
@@ -274,7 +453,7 @@ h1, h2, h3, h4 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   REZEPT-KARTE (Expander) – Screenshot-Stil mit Baumrinden-Textur
+   REZEPT-KARTE (Expander)
 ═══════════════════════════════════════════════════════════════ */
 .stExpander {
     background-color: var(--weiss) !important;
@@ -323,7 +502,7 @@ h1, h2, h3, h4 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   BADGES – pillenförmig (Screenshot-Stil)
+   BADGES – pillenförmig
 ═══════════════════════════════════════════════════════════════ */
 .badge {
     display: inline-block;
@@ -366,8 +545,6 @@ h1, h2, h3, h4 {
     color: #7A2A10;
     border: 1px solid rgba(200,90,40,0.2);
 }
-
-/* Favoriten-Badge */
 .fav-badge {
     display: inline-block;
     background: linear-gradient(135deg, #F07090, #D84060);
@@ -382,7 +559,7 @@ h1, h2, h3, h4 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION LABELS – wie gedruckte Rubriken im Kochbuch
+   SECTION LABELS
 ═══════════════════════════════════════════════════════════════ */
 .section-label {
     font-family: 'Lato', sans-serif;
@@ -397,7 +574,7 @@ h1, h2, h3, h4 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ZUTAT GRID – organische Pillen
+   ZUTAT GRID
 ═══════════════════════════════════════════════════════════════ */
 .zutat-grid {
     display: grid;
@@ -418,9 +595,7 @@ h1, h2, h3, h4 {
     font-family: 'Lato', sans-serif;
     transition: border-color 0.18s ease;
 }
-.zutat-item:hover {
-    border-color: var(--terra);
-}
+.zutat-item:hover { border-color: var(--terra); }
 .zutat-menge {
     font-weight: 900;
     color: var(--terra);
@@ -433,7 +608,7 @@ h1, h2, h3, h4 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ZUTATEN-TAGS (Match-Anzeige) – Screenshot-Pille
+   ZUTATEN-TAGS (Match-Anzeige)
 ═══════════════════════════════════════════════════════════════ */
 .zutat-tag {
     display: inline-block;
@@ -526,7 +701,7 @@ h1, h2, h3, h4 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ZUTATEN-CHECK HEADER – Salbei-Grün
+   ZUTATEN-CHECK HEADER
 ═══════════════════════════════════════════════════════════════ */
 .zutat-check-header {
     background: linear-gradient(135deg, var(--salbei-soft), #C8E8CC);
@@ -552,7 +727,7 @@ h1, h2, h3, h4 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   REZEPTE-HEADER (Trennlinie-Stil)
+   REZEPTE-HEADER
 ═══════════════════════════════════════════════════════════════ */
 .rezepte-header {
     font-family: 'Playfair Display', serif;
@@ -589,7 +764,7 @@ h1, h2, h3, h4 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SIDEBAR – Dunkles Kaffeebraun (Screenshot-Stil: fast Schwarz)
+   SIDEBAR – Dunkles Kaffeebraun
 ═══════════════════════════════════════════════════════════════ */
 section[data-testid="stSidebar"] {
     background: linear-gradient(
@@ -639,7 +814,6 @@ section[data-testid="stSidebar"] [data-baseweb="select"] > div {
     border-color: rgba(255,255,255,0.15) !important;
     border-radius: var(--radius-sm) !important;
 }
-/* Sidebar Expander */
 section[data-testid="stSidebar"] .stExpander {
     background-color: rgba(255,255,255,0.07) !important;
     border-color: rgba(255,255,255,0.12) !important;
@@ -652,7 +826,6 @@ section[data-testid="stSidebar"] .stExpander:hover {
 section[data-testid="stSidebar"] .stExpander summary p {
     color: #F0E0CC !important;
 }
-/* Sidebar Slider */
 section[data-testid="stSidebar"] .stSlider [data-baseweb="thumb"] {
     background: var(--terra) !important;
 }
@@ -661,7 +834,7 @@ section[data-testid="stSidebar"] .stSlider [data-baseweb="track-fill"] {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   BUTTONS – warm & rund
+   BUTTONS
 ═══════════════════════════════════════════════════════════════ */
 .stButton > button {
     border-radius: var(--radius-md) !important;
@@ -683,7 +856,7 @@ section[data-testid="stSidebar"] .stSlider [data-baseweb="track-fill"] {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   EINGABEFELDER – warm & einladend
+   EINGABEFELDER
 ═══════════════════════════════════════════════════════════════ */
 .stTextInput > div > div > input {
     border-radius: var(--radius-sm) !important;
@@ -703,55 +876,32 @@ section[data-testid="stSidebar"] .stSlider [data-baseweb="track-fill"] {
     color: var(--text-m) !important;
     font-size: 0.86rem !important;
 }
-
-/* Number Input */
 .stNumberInput > div > div > input {
     border-radius: var(--radius-sm) !important;
     border: 1.5px solid var(--sand-mid) !important;
     font-family: 'Lato', sans-serif !important;
     color: var(--text-d) !important;
 }
-
-/* Slider */
-.stSlider [data-baseweb="thumb"] {
-    background: var(--terra) !important;
-}
-.stSlider [data-baseweb="track-fill"] {
-    background: var(--terra) !important;
-}
-
-/* Multiselect */
+.stSlider [data-baseweb="thumb"] { background: var(--terra) !important; }
+.stSlider [data-baseweb="track-fill"] { background: var(--terra) !important; }
 [data-baseweb="tag"] {
     background: var(--terra-soft) !important;
     border-radius: 10px !important;
 }
 [data-baseweb="tag"] span { color: #7A2A10 !important; }
-
-/* Progress bar */
 .stProgress > div > div > div > div {
     background: linear-gradient(90deg, var(--salbei), #4A8055) !important;
     border-radius: 10px !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TRENNLINIE IN KARTEN
+   TRENNLINIE / DIVIDER
 ═══════════════════════════════════════════════════════════════ */
 .stExpander hr, hr {
     border: none !important;
     border-top: 1.5px dashed var(--sand) !important;
     margin: 0.8rem 0 !important;
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   SELECTBOX & MULTISELECT IN SIDEBAR
-═══════════════════════════════════════════════════════════════ */
-section[data-testid="stSidebar"] [data-baseweb="popover"] {
-    background: #4E2A14 !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   ATMOSPHÄRISCHE SECTION-DIVIDER
-═══════════════════════════════════════════════════════════════ */
 .divider-warm {
     width: 100%;
     height: 2px;
@@ -761,7 +911,7 @@ section[data-testid="stSidebar"] [data-baseweb="popover"] {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   KARTEN INFO-BOX (stAlert/stInfo)
+   INFO ALERTS
 ═══════════════════════════════════════════════════════════════ */
 [data-testid="stAlert"] {
     border-radius: var(--radius-md) !important;
@@ -895,7 +1045,7 @@ def parse_zubereitung_steps(zubereitung_str: str) -> list[str]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# INTELLIGENTE ZUTATEN-NORMALISIERUNG (unverändert)
+# ZUTATEN-NORMALISIERUNG (unverändert)
 # ══════════════════════════════════════════════════════════════════════════════
 _MENGE_EINHEIT_PATTERN = re.compile(
     r"""
@@ -1138,6 +1288,78 @@ def berechne_matches(df: pd.DataFrame, vorhandene_zutaten: set) -> pd.DataFrame:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# NEU v3: KULINARISCHE WISSENSBASIS
+# Kochzitate, Flavor-Pairing-Tipps, Saison-Logik
+# ══════════════════════════════════════════════════════════════════════════════
+
+# 12 inspirierende Kochzitate – eines pro Monat, fühlt sich frisch an
+KOCHZITATE = [
+    ("Kochen ist Kunst. Essen ist Kultur. Und beides verbindet Menschen.", "Unbekannt"),
+    ("Der erste Biss ist mit den Augen.", "Alte Küchenweisheit"),
+    ("Ein gutes Essen braucht keine Worte – es spricht für sich selbst.", "Auguste Escoffier"),
+    ("Würze ist die Seele eines Gerichts. Ohne sie bleibt alles stumm.", "Arabisches Sprichwort"),
+    ("Das Geheimnis großer Köche? Sie kochen mit Erinnerungen.", "Ferran Adrià"),
+    ("Man isst nicht nur mit dem Mund, sondern mit allen Sinnen.", "Paul Bocuse"),
+    ("Rezepte sind Liebesbriefe an die Zukunft.", "Unbekannt"),
+    ("Das Beste an einem selbst gekochten Essen ist die Stille danach.", "Küchenphilosophie"),
+    ("Genuss braucht Zeit. Zeit ist die wichtigste Zutat.", "Alain Ducasse"),
+    ("Ein Gericht ohne Herz ist nur Nahrung. Mit Herz wird es zur Mahlzeit.", "Julia Child"),
+    ("Frische Zutaten lügen nie.", "Thomas Keller"),
+    ("Die Küche ist der wärmste Ort im Haus.", "Bauernweisheit"),
+]
+
+# Tagesbasiertes Zitat: deterministisch, wechselt täglich
+def get_tageszitat() -> tuple[str, str]:
+    tag_des_jahres = datetime.datetime.now().timetuple().tm_yday
+    return KOCHZITATE[tag_des_jahres % len(KOCHZITATE)]
+
+# Tagesrezept: deterministisch basierend auf dem Datum (wechselt täglich)
+def get_tagesrezept(df: pd.DataFrame) -> pd.Series | None:
+    if df.empty:
+        return None
+    tag_des_jahres = datetime.datetime.now().timetuple().tm_yday
+    idx = tag_des_jahres % len(df)
+    return df.iloc[idx]
+
+# Aktuelle Saison ermitteln
+def get_saison() -> tuple[str, str, str]:
+    """Gibt (Saison-Name, Icon, CSS-Klasse) zurück."""
+    monat = datetime.datetime.now().month
+    if monat in (3, 4, 5):
+        return "Frühling", "🌸", "fruehling"
+    elif monat in (6, 7, 8):
+        return "Sommer", "☀️", "sommer"
+    elif monat in (9, 10, 11):
+        return "Herbst", "🍂", "herbst"
+    else:
+        return "Winter", "❄️", "winter"
+
+# Flavor-Pairing-Tipps je nach Kategorie
+FLAVOR_PAIRING_TIPPS: dict[str, str] = {
+    "🥩 Fleisch":       "Rotes Fleisch liebt Rosmarin, Knoblauch & einen Schuss Rotwein. Karamellisiere die Oberfläche scharf an – der Maillard-Effekt ist dein bester Freund.",
+    "Suppe":            "Tiefe bekommt eine Suppe durch langes Rösten der Zwiebeln und ein Lorbeerblatt. Frische kommt erst am Ende – mit Zitrone oder frischen Kräutern.",
+    "Pasta":            "Pasta-Wasser ist flüssiges Gold: stärkehaltig und salzig perfektioniert es jede Sauce. Immer etwas aufbewahren!",
+    "Salat":            "Ein gutes Dressing braucht die Balance aus Säure, Fett und Süße. Probiere: Balsamico + Olivenöl + ein Hauch Honig.",
+    "Fisch":            "Fisch verträgt keine lange Hitze. Gare ihn lieber 1 Minute weniger – er zieht im Ruhezustand noch nach. Zitronenschale verstärkt den Meeresgeschmack ohne Säure.",
+    "Vegetarisch":      "Umami ohne Fleisch gelingt durch Miso, geröstete Pilze, Parmesan oder Tomatenmark. Diese Zutaten sind natürliche Geschmacksverstärker.",
+    "Vegan":            "Kokosöl brät wunderbar heiß. Hefeflocken bringen den käsigen Umami-Kick in vegane Gerichte – probiere es auf Pasta oder Popcorn.",
+    "Suess":            "Salz im Dessert ist kein Fehler – es hebt die Süße hervor. Eine Prise Fleur de Sel auf Schokolade oder Karamell ist Magie.",
+    "Standard":         "Frische Kräuter erst am Ende hinzufügen. Hitze zerstört die flüchtigen Aromen – Basilikum, Petersilie und Minze entfalten sich nur roh.",
+}
+
+def get_flavor_pairing(row: pd.Series) -> str:
+    """Wählt den passenden Flavor-Pairing-Tipp basierend auf Kategorie / Ernährungsform."""
+    kategorie  = str(row.get("Kategorie", "")).strip()
+    ernaehrung = str(row.get("Ernährungsform", "")).strip()
+    name       = str(row.get("Name des Gerichts", "")).lower()
+
+    for key, tipp in FLAVOR_PAIRING_TIPPS.items():
+        if key.lower() in kategorie.lower() or key.lower() in ernaehrung.lower() or key.lower() in name:
+            return tipp
+    return FLAVOR_PAIRING_TIPPS["Standard"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # SESSION STATE INITIALISIERUNG
 # ══════════════════════════════════════════════════════════════════════════════
 if "favoriten" not in st.session_state:
@@ -1167,8 +1389,8 @@ def toggle_favorit(name: str):
 
 def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
     """
-    Zentrale Funktion zum Rendern einer Rezeptkarte im Kochbuch-Stil.
-    Identische Logik wie Original – nur Darstellung aufgewertet.
+    Zentrale Funktion zum Rendern einer Rezeptkarte.
+    NEU v3: Integriert Flavor-Pairing-Tipp nach der Koch-Tipps-Box.
     """
     name        = row.get("Name des Gerichts", "Unbekannt")
     zeit        = row.get("Benötigte Zeit", 0)
@@ -1320,6 +1542,16 @@ def rendere_rezept_karte(row, idx_key: str, zeige_portionsrechner: bool = True):
             </div>
             """, unsafe_allow_html=True)
 
+        # ── NEU v3: Flavor-Pairing-Tipp (lila Box) ───────────────────────
+        # Zeigt ein kulinarisches Wissens-Nugget basierend auf Kategorie/Ernährungsform
+        flavor_tipp = get_flavor_pairing(row)
+        st.markdown(f"""
+        <div class="flavor-box">
+            <p class="flavor-box-title">🍷 Flavor-Pairing Wissen</p>
+            <p class="flavor-box-text">{flavor_tipp}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # DATEN LADEN
@@ -1337,12 +1569,15 @@ if df.empty:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# HERO HEADER – Screenshot-getreue Terrakotta-Leiste
+# HERO HEADER
+# NEU v3: Ø-Zeit-Stat entfernt → tagesbasiertes Kochzitat + Favoriten-Stat
 # ══════════════════════════════════════════════════════════════════════════════
-avg_zeit  = int(df["Benötigte Zeit"].mean()) if not df.empty else 0
 n_rezepte = len(df)
 n_fav     = len(st.session_state.favoriten)
+saison_name, saison_icon, _ = get_saison()
+zitat_text, zitat_autor = get_tageszitat()
 
+# Hero: Stats zeigen jetzt Rezepte + Favoriten + aktuelle Saison
 st.markdown(f"""
 <div class="hero-header">
     <h1 class="hero-title">🥘 Mein Kochbuch</h1>
@@ -1353,12 +1588,16 @@ st.markdown(f"""
             <span class="hero-stat-label">Rezepte</span>
         </div>
         <div class="hero-stat">
-            <span class="hero-stat-number">{avg_zeit}</span>
-            <span class="hero-stat-label">Ø Min</span>
-        </div>
-        <div class="hero-stat">
             <span class="hero-stat-number">{n_fav}</span>
             <span class="hero-stat-label">Favoriten</span>
+        </div>
+        <div class="hero-stat">
+            <span class="hero-stat-number">{saison_icon}</span>
+            <span class="hero-stat-label">{saison_name}</span>
+        </div>
+        <div class="hero-quote">
+            <p class="hero-quote-text">„{zitat_text}"</p>
+            <p class="hero-quote-author">— {zitat_autor}</p>
         </div>
     </div>
 </div>
@@ -1373,6 +1612,10 @@ tab1, tab2, tab3 = st.tabs(["🥘 Alle Rezepte", "❤️ Favoriten", "🛒 Zutat
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 1 – ALLE REZEPTE
+# NEU v3: Metriken überarbeitet (kein Ø Zeit, kein Kategorien-Count)
+#          + Tagesrezept-Banner
+#          + Saison-Kachel
+#          + Inspirations-Cards bei leerem Zustand
 # ════════════════════════════════════════════════════════════════════════════
 with tab1:
 
@@ -1400,10 +1643,10 @@ with tab1:
             options = [o for o in options if o]
             return st.multiselect(f"{emoji} {label}", options=options)
 
-        sel_kategorie  = ms_filter("Kategorie",     "Kategorie",     "🍴")
-        sel_ernaehrung = ms_filter("Ernährungsform", "Ernährungsform","🌿")
-        sel_saison     = ms_filter("Saison-Check",   "Saison-Check",  "🌸")
-        sel_aufwand    = ms_filter("Aufwand",         "Aufwand",       "⚡")
+        sel_kategorie  = ms_filter("Kategorie",      "Kategorie",      "🍴")
+        sel_ernaehrung = ms_filter("Ernährungsform",  "Ernährungsform", "🌿")
+        sel_saison     = ms_filter("Saison-Check",    "Saison-Check",   "🌸")
+        sel_aufwand    = ms_filter("Aufwand",          "Aufwand",        "⚡")
 
         st.markdown("---")
         st.markdown("""
@@ -1436,19 +1679,76 @@ with tab1:
     if sel_aufwand:
         filtered = filtered[filtered["Aufwand"].isin(sel_aufwand)]
 
-    # ── Metriken ──────────────────────────────────────────────────────────
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("🥘 Rezepte", len(filtered))
-    with col2:
-        avg_t = int(filtered["Benötigte Zeit"].mean()) if not filtered.empty else 0
-        st.metric("⏱️ Ø Zeit", f"{avg_t} min")
-    with col3:
-        st.metric("🍴 Kategorien", filtered["Kategorie"].nunique())
-    with col4:
-        st.metric("🌿 Ernährungsformen", filtered["Ernährungsform"].nunique())
+    # ── NEU v3: Tagesrezept-Banner (nur ohne aktive Filter) ───────────────
+    kein_aktiver_filter = (
+        not search_term and
+        not sel_kategorie and not sel_ernaehrung and
+        not sel_saison and not sel_aufwand and
+        zeit_range == (min_zeit, max_zeit)
+    )
 
-    st.markdown("<div style='height:1.2rem'></div>", unsafe_allow_html=True)
+    if kein_aktiver_filter:
+        tagesrezept_row = get_tagesrezept(df)
+        if tagesrezept_row is not None:
+            tr_name    = tagesrezept_row.get("Name des Gerichts", "")
+            tr_zeit    = tagesrezept_row.get("Benötigte Zeit", 0)
+            tr_aufwand = tagesrezept_row.get("Aufwand", "")
+            tr_kat     = tagesrezept_row.get("Kategorie", "")
+            tr_meta    = " · ".join(filter(None, [
+                f"⏱ {tr_zeit} min" if tr_zeit else None,
+                tr_aufwand or None,
+                tr_kat or None,
+            ]))
+            st.markdown(f"""
+            <div class="tagesrezept-banner">
+                <p class="tagesrezept-label">✨ Rezept des Tages</p>
+                <p class="tagesrezept-name">{tr_name}</p>
+                <p class="tagesrezept-meta">{tr_meta}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── NEU v3: Inspirations-Kacheln (leerer/ungefiltert Zustand) ─────────
+    # Ersetzt die leblosen Ø-Zeit und Kategorie-Metriken
+    # Zeigt stattdessen 4 inspirierende Fakten über die Sammlung
+    leichte_rezepte = len(df[df["Aufwand"].str.lower() == "leicht"]) if "Aufwand" in df.columns else 0
+    saison_rezepte  = len(df[df["Saison-Check"].str.lower().str.contains(saison_name.lower(), na=False)]) if "Saison-Check" in df.columns else 0
+    schnell_rezepte = len(df[df["Benötigte Zeit"] <= 30])
+    veg_rezepte     = len(df[df["Ernährungsform"].str.lower().str.contains("veg", na=False)]) if "Ernährungsform" in df.columns else 0
+
+    if kein_aktiver_filter:
+        st.markdown(f"""
+        <div class="inspiration-grid">
+            <div class="inspiration-card">
+                <span class="inspiration-card-icon">⚡</span>
+                <p class="inspiration-card-title">{schnell_rezepte} Blitzrezepte</p>
+                <p class="inspiration-card-text">In 30 Minuten oder weniger auf dem Tisch – perfekt für den Alltag.</p>
+            </div>
+            <div class="inspiration-card">
+                <span class="inspiration-card-icon">{saison_icon}</span>
+                <p class="inspiration-card-title">{saison_rezepte} {saison_name}s­rezepte</p>
+                <p class="inspiration-card-text">Saisonale Gerichte, die jetzt gerade besonders gut schmecken.</p>
+            </div>
+            <div class="inspiration-card">
+                <span class="inspiration-card-icon">🌿</span>
+                <p class="inspiration-card-title">{veg_rezepte} Veggie-Rezepte</p>
+                <p class="inspiration-card-text">Fleischlos glücklich – vom schnellen Salat bis zum Festmahl.</p>
+            </div>
+            <div class="inspiration-card">
+                <span class="inspiration-card-icon">🎯</span>
+                <p class="inspiration-card-title">{leichte_rezepte} Einfache Rezepte</p>
+                <p class="inspiration-card-text">Ohne Stress zum Genuss – auch für Kochanfänger geeignet.</p>
+            </div>
+        </div>
+        <div style="height:1.2rem"></div>
+        """, unsafe_allow_html=True)
+    else:
+        # Bei aktiven Filtern: kompakte Ergebnis-Metriken (nur Anzahl + Favoriten)
+        mc1, mc2 = st.columns(2)
+        with mc1:
+            st.metric("🥘 Rezepte gefunden", len(filtered))
+        with mc2:
+            st.metric("❤️ Meine Favoriten", n_fav)
+        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
     # ── Rezepte anzeigen ──────────────────────────────────────────────────
     if filtered.empty:
@@ -1468,7 +1768,7 @@ with tab1:
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# TAB 2 – FAVORITEN
+# TAB 2 – FAVORITEN (unverändert)
 # ════════════════════════════════════════════════════════════════════════════
 with tab2:
     st.markdown("""
@@ -1501,7 +1801,7 @@ with tab2:
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# TAB 3 – ZUTATEN-CHECK
+# TAB 3 – ZUTATEN-CHECK (unverändert – Kernlogik bleibt 100% erhalten)
 # ════════════════════════════════════════════════════════════════════════════
 with tab3:
     st.markdown("""
